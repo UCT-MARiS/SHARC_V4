@@ -1,0 +1,24 @@
+{
+  "recommendations": [
+    "dan-c-underwood.arm",
+    "jeff-hykin.better-cpp-syntax",
+    "aaron-bond.better-comments",
+    "ms-vscode.cpptools-extension-pack",
+    "matepek.vscode-catch2-test-adapter",
+    "xaver.clang-format",
+    "ms-vscode.cmake-tools",
+    "streetsidesoftware.code-spell-checker",
+    "marus25.cortex-debug",
+    "marus25.cortex-debug-dp-stm32f1",
+    "ms-vscode-remote.remote-containers",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode.vscode-embedded-tools",
+    "pierre-payen.gdb-syntax",
+    "github.vscode-github-actions",
+    "ms-vscode.hexeditor",
+    "trond-snekvik.gnu-mapfiles",
+    "ms-vscode.makefile-tools",
+    "ibm.output-colorizer",
+    "cschlosser.doxdocgen"
+  ]
+}

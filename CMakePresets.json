@@ -1,0 +1,74 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22
+  },
+  "configurePresets": [
+    {
+      "name": "Server",
+      "displayName": "Build Server",
+      "description": "Minimal build configuration for Build Server",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      },
+      "binaryDir": "Build/Server"
+    },
+    {
+      "name": "arm-none-eabi",
+      "displayName": "ARM GCC Cross Compilation",
+      "description": "Cross compile for ARM Embedded Processors",
+      "generator": "Ninja",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      },
+      "warnings": {},
+      "toolchainFile": "CMake/arm-none-eabi.cmake",
+      "binaryDir": "Build/ARM"
+    },
+    {
+      "name": "Debug",
+      "displayName": "Debug",
+      "description": "Target Embedded Device with Debugging options.",
+      "inherits": ["arm-none-eabi"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "binaryDir": "Build/App/Debug"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Server",
+      "displayName": "Server",
+      "description": "Configuration for building tests on minimal build server.",
+      "configurePreset": "Server",
+      "cleanFirst": false,
+      "verbose": false
+    },
+    {
+      "name": "Debug",
+      "displayName": "Debug",
+      "description": "Target Embedded Device with Debugging options.",
+      "configurePreset": "Debug",
+      "jobs": 12,
+      "verbose": false
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "Server",
+      "displayName": "Server Side Tests",
+      "description": "Remote Testing on Build Server",
+      "configurePreset": "Server",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": true
+      }
+    }
+  ]
+}

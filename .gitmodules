@@ -1,0 +1,6 @@
+[submodule "Modules/STM32CubeL4"]
+	path = Modules/STM32CubeL4
+	url = https://github.com/STMicroelectronics/STM32CubeL4
+[submodule "Modules/googletest"]
+	path = Modules/googletest
+	url = https://github.com/google/googletest.git

@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "bsp_driver_sd.h": "c",
+        "fatfs.h": "c",
+        "main.h": "c",
+        "stm32l4xx_hal.h": "c",
+        "sd_init.h": "c",
+        "stm32l4xx_hal_wwdg.h": "c",
+        "hal_sd.h": "c",
+        "icm20649.h": "c",
+        "arm_math.h": "c",
+        "stm32l4r5xx.h": "c",
+        "wave.h": "c",
+        "sharc_frame.h": "c",
+        "rb9603.h": "c"
+    },
+
+    "editor.fontSize": 16,
+    "terminal.integrated.fontSize": 14,
+    "window.zoomLevel": 1.4,
+    "cSpell.words": [
+        "driftbuffer",
+        "wavebuffer"
+    ],
+}
