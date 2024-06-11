@@ -1,5 +1,4 @@
 #include "main.hpp"
-//#include "M9N_STM32.hpp"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wformat"
@@ -35,7 +34,7 @@ int main(void) {
 
 while(1){
 	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-	HAL_Delay(1000);
+	HAL_Delay(100);
 }
 
 
