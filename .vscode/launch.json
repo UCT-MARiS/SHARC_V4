@@ -1,4 +1,5 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
             "name": "Debug with ST-Link",
@@ -74,7 +75,33 @@
                 }
             ],
             "preLaunchTask": "C/C++: g++.exe build active file"
+        },
+        {
+            "name": "Server Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Build/Tests/run_tests", // Ensure this path is correct
+            "args": [],
+            "stopAtEntry": false, // Change to true if you want the debugger to stop at the entry point
+            "cwd": "${workspaceFolder}",
+            "environment": [], // Add any necessary environment variables here
+            "externalConsole": false, // Set to true if you need an external console
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:\\msys64\\ucrt64\\bin\\gdb.exe", // Ensure this path is correct
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build and Test with Mocks" // Ensure this task is defined in tasks.json
         }
-    ],
-    "version": "2.0.0"
+        
+    ]
 }

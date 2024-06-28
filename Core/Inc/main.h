@@ -50,6 +50,10 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
+// Function declarations
+int main(int argc, char **argv);
+void setupHAL();
+void printmsg(char *format,...);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */

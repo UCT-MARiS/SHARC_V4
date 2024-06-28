@@ -20,15 +20,19 @@ UART_HandleTypeDef hlpuart1;
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
-void printmsg(char *format,...);
+void setupHAL(){
+    HAL_Init();		//Init Flash prefetch, systick timer, NVIC and LL functions
+	SystemClock_Config();	//configure clock
+	MX_GPIO_Init();
+	MX_LPUART1_UART_Init(); //configure UART
+}
+
 //======================== 1. END ============================================================================
 
 int main(void) {
 //======================== 1. SYSTEM INIT & CLOCK CONFIG ========================//
-	HAL_Init();		//Init Flash prefetch, systick timer, NVIC and LL functions
-	SystemClock_Config();	//configure clock
-	MX_GPIO_Init();
-	MX_LPUART1_UART_Init(); 
+    setup();
+	
 	printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//
 

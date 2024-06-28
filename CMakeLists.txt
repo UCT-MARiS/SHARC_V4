@@ -65,14 +65,27 @@ if(CMAKE_CROSSCOMPILING)
 endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
-	enable_testing()
+	# Set the compiler to the one provided by MSYS2
 	set(CMAKE_C_COMPILER "C:/msys64/ucrt64/bin/gcc.exe")
 	set(CMAKE_CXX_COMPILER "C:/msys64/ucrt64/bin/g++.exe")
+
+	# Enable testing
+	enable_testing()
+
+	add_subdirectory(Modules)
+
+	# Add test subdirectory
+	add_subdirectory(Tests)
+
+	#target_link_libraries(run_tests
+	#	PUBLIC STM32CUBEL4_HAL
+	#)
+	
 endif()
 
-add_subdirectory(Modules)
-
 if(CMAKE_CROSSCOMPILING)
+
+	add_subdirectory(Modules)
 	
 	set(APPLICATION_INCLUDE_DIRECTORIES
 		${CMAKE_SOURCE_DIR}/Core/Inc
@@ -107,6 +120,9 @@ if(CMAKE_CROSSCOMPILING)
 	target_link_libraries(${TARGET_EXECUTABLE} 
 		PUBLIC STM32CUBEL4_HAL
 	)
+
+	# Add the tests directory
+	add_subdirectory(tests)
 
 	target_link_options(${TARGET_EXECUTABLE} PRIVATE
 		LINKER:-Map=${CMAKE_PROJECT_NAME}.map,--cref
