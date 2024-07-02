@@ -22,6 +22,8 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
+#include "hal_interface.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,8 +53,6 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 // Function declarations
-int main(int argc, char **argv);
-void setupHAL();
 void printmsg(char *format,...);
 void Error_Handler(void);
 

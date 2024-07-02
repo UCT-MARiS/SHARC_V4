@@ -1,10 +1,16 @@
 # add preprocesor defintions
 add_definitions(-DSTM32L4R5xx)
 
+# Disable pthread support in GoogleTest
+add_definitions(-DGTEST_HAS_PTHREAD=1)
+
+find_package(Threads REQUIRED)
+
 # Define the test sources
 set(TEST_SOURCES
     hello_test.cpp
     main_test.cpp
+    ${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/setup_hal.cpp
     # Add more test files as needed
 )
 
@@ -22,6 +28,7 @@ target_include_directories(run_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/CMSIS/Device/ST/STM32L4xx/Include
     ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/CMSIS/Include
     ${CMAKE_SOURCE_DIR}/Core/Inc
+    ${CMAKE_SOURCE_DIR}/Core/Inc/HAL_Init
     ${CMAKE_SOURCE_DIR}/Tests/Mock/Inc
 )
 

@@ -14,7 +14,8 @@
 			"stdio.h": "c",
 			"random": "cpp",
 			"*.tcc": "cpp",
-			"cstdint": "cpp"
+			"cstdint": "cpp",
+			"main.h": "c"
 		}
 	}
 }

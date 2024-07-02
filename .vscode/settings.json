@@ -20,6 +20,9 @@
     "window.zoomLevel": 1.4,
     "cSpell.words": [
         "driftbuffer",
+        "GPIO",
+        "IHAL",
+        "LPUART",
         "wavebuffer"
     ],
 }

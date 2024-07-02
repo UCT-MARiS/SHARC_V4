@@ -1,4 +1,6 @@
 #include "main.hpp"
+#include "hal_interface.hpp"
+#include "hal_impl.hpp"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wformat"
@@ -20,18 +22,17 @@ UART_HandleTypeDef hlpuart1;
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
-void setupHAL(){
-    HAL_Init();		//Init Flash prefetch, systick timer, NVIC and LL functions
-	SystemClock_Config();	//configure clock
-	MX_GPIO_Init();
-	MX_LPUART1_UART_Init(); //configure UART
-}
+// Function pointers for HAL functions
 
 //======================== 1. END ============================================================================
 
 int main(void) {
+
+    HAL_Impl halImpl;
+    
 //======================== 1. SYSTEM INIT & CLOCK CONFIG ========================//
-    setup();
+    
+    setupHAL(&halImpl);
 	
 	printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//

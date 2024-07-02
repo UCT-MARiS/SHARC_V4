@@ -9,8 +9,17 @@ extern "C" {
 #include "stdio.h"
 }
 
+extern void setupHAL();
+extern IHAL* hal;
+
 using ::testing::_;
-using ::testing::Return;
+using ::testing::NiceMock;
+
+// Function pointers for HAL functions
+void (*HAL_Init_ptr)() = nullptr;
+void (*SystemClock_Config_ptr)() = nullptr;
+void (*MX_GPIO_Init_ptr)() = nullptr;
+void (*MX_LPUART1_UART_Init_ptr)() = nullptr;
 
 class MainTest : public ::testing::Test {
 protected:
@@ -39,7 +48,7 @@ TEST_F(MainTest, MainFunctionCalls) {
     EXPECT_CALL(mockHal, MX_LPUART1_UART_Init()).Times(1);
 
     // Call main
-    setupHAL();
+    setupHAL(mockHALInstance);
 }
 
 
