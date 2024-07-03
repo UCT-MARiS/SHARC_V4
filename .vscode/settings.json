@@ -21,6 +21,7 @@
     "cSpell.words": [
         "driftbuffer",
         "GPIO",
+        "huart",
         "IHAL",
         "LPUART",
         "wavebuffer"

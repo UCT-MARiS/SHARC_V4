@@ -2,8 +2,11 @@
 #define HAL_IMPL_HPP
 
 #include "hal_interface.hpp"
-#include "init.h"
 #include "main.hpp"
+
+extern "C" {
+    #include "init.h"
+}
 
 class HAL_Impl : public IHAL {
 public:
