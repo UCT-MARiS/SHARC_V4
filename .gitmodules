@@ -4,3 +4,6 @@
 [submodule "Modules/googletest"]
 	path = Modules/googletest
 	url = https://github.com/google/googletest.git
+[submodule "Modules/FreeRTOS"]
+	path = Modules/FreeRTOS
+	url = https://github.com/FreeRTOS/FreeRTOS.git
