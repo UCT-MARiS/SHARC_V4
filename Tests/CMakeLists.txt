@@ -2,7 +2,7 @@
 add_definitions(-DSTM32L4R5xx)
 
 # Disable pthread support in GoogleTest
-add_definitions(-DGTEST_HAS_PTHREAD=1)
+add_definitions(-Dgtest_disable_pthreads=ON)
 
 find_package(Threads REQUIRED)
 
@@ -33,7 +33,7 @@ target_include_directories(run_tests PRIVATE
 )
 
 # Link the test executable with Google Test
-target_link_libraries(run_tests gtest gtest_main gmock pthread)
+target_link_libraries(run_tests gtest gtest_main gmock)
 
 # Add the test executable to CTest
 add_test(NAME run_tests COMMAND run_tests)

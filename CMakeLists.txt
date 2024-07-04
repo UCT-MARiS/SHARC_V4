@@ -118,7 +118,8 @@ if(CMAKE_CROSSCOMPILING)
 	)
 
 	target_link_libraries(${TARGET_EXECUTABLE} 
-		PUBLIC STM32CUBEL4_HAL
+		PUBLIC SHARC::HAL
+		PUBLIC SHARC::RTOS
 	)
 
 	# Add the tests directory

@@ -2,6 +2,26 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Build without Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program":  "${command:cmake.launchTargetPath}", // Adjust to your executable's name
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build Project" // Use the CMake Tools build task
+        },
+        {
             "name": "Debug with ST-Link",
             "cwd": "${workspaceFolder}",
             "executable": "${command:cmake.launchTargetPath}",

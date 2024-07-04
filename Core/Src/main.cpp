@@ -12,12 +12,16 @@ extern "C" {
 #include "string.h"
 #include <stdarg.h>
 #include "stdio.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 #ifdef __cplusplus 
 }
 #endif
 
 //======================== 0. Peripheral Handles ============================================================
 UART_HandleTypeDef hlpuart1;
+HAL_Impl halImpl;
 
 //======================== 0. END ============================================================================
 
@@ -27,19 +31,15 @@ UART_HandleTypeDef hlpuart1;
 //======================== 1. END ============================================================================
 
 int main(void) {
-
-    HAL_Impl halImpl;
     
 //======================== 1. SYSTEM INIT & CLOCK CONFIG ========================//
-    
     setupHAL(&halImpl);
-	
 	printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//
 
 while(1){
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-	HAL_Delay(100);
+	halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+	halImpl.HAL_Delay(100);
 }
 
 
@@ -54,7 +54,7 @@ void printmsg(char *format,...) {
     va_list args;
     va_start(args, format);
     vsprintf(str, format,args);
-    HAL_UART_Transmit(&hlpuart1,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
+    halImpl.HAL_UART_Transmit(&hlpuart1,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
     va_end(args);
 }
 

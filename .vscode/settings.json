@@ -12,7 +12,8 @@
         "stm32l4r5xx.h": "c",
         "wave.h": "c",
         "sharc_frame.h": "c",
-        "rb9603.h": "c"
+        "rb9603.h": "c",
+        "freertosconfig.h": "c"
     },
 
     "editor.fontSize": 16,
@@ -26,4 +27,6 @@
         "LPUART",
         "wavebuffer"
     ],
+    
 }
+

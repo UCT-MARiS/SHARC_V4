@@ -1,4 +1,4 @@
-# Configures the STM32CubeL4 HAL and FATFS libraries.
+# Configures the STM32CubeL4 HAL
 # It is expected the https://github.com/STMicroelectronics/STM32CubeL4 is cloned to ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4.
 
 # Generates static libraries:
