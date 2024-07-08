@@ -3,4 +3,6 @@ if(CMAKE_CROSSCOMPILING)
 	include(rtos.cmake)
 endif()
 
-include(gtest.cmake)
+if (NOT CMAKE_CROSSCOMPILING)
+	include(gtest.cmake)
+endif()

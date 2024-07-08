@@ -50,7 +50,7 @@
                 "samplesPerSecond": 4
             }
         },
-        {
+        { //TODO: Update OpenOCD configuration for XRTOS debugging
             "name": "Debug with OpenOCD",
             "cwd": "${workspaceRoot}",
             "executable": "${command:cmake.launchTargetPath}",

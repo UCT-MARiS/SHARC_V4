@@ -84,6 +84,14 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
+  __asm volatile
+    (
+        "TST lr, #4 \n"
+        "ITE EQ \n"
+        "MRSEQ r0, MSP \n"
+        "MRSNE r0, PSP \n"
+        "B hard_fault_handler_c \n"
+    );
 
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
@@ -91,6 +99,36 @@ void HardFault_Handler(void)
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
+}
+
+/**
+ * @brief 
+ * 
+ * @param hardfault_args 
+ */
+void hard_fault_handler_c(uint32_t *hardfault_args)
+{
+    volatile uint32_t stacked_r0;
+    volatile uint32_t stacked_r1;
+    volatile uint32_t stacked_r2;
+    volatile uint32_t stacked_r3;
+    volatile uint32_t stacked_r12;
+    volatile uint32_t stacked_lr;
+    volatile uint32_t stacked_pc;
+    volatile uint32_t stacked_psr;
+
+    stacked_r0 = ((uint32_t)hardfault_args[0]);
+    stacked_r1 = ((uint32_t)hardfault_args[1]);
+    stacked_r2 = ((uint32_t)hardfault_args[2]);
+    stacked_r3 = ((uint32_t)hardfault_args[3]);
+
+    stacked_r12 = ((uint32_t)hardfault_args[4]);
+    stacked_lr = ((uint32_t)hardfault_args[5]);
+    stacked_pc = ((uint32_t)hardfault_args[6]);
+    stacked_psr = ((uint32_t)hardfault_args[7]);
+
+    // Use these variables to inspect the fault
+    for(;;);
 }
 
 /**
@@ -138,58 +176,59 @@ void UsageFault_Handler(void)
   }
 }
 
-/**
-  * @brief This function handles System service call via SWI instruction.
-  */
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
+// /**
+//   * @brief This function handles System service call via SWI instruction.
+//   */
 
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
+// void SVC_Handler(void)
+// {
+// /* user code begin svcall_irqn 0 */
 
-  /* USER CODE END SVCall_IRQn 1 */
-}
+// /* user code end svcall_irqn 0 */
+// /* user code begin svcall_irqn 1 */
+
+// /* user code end svcall_irqn 1 */
+// }
 
 /**
   * @brief This function handles Debug monitor.
   */
-void DebugMon_Handler(void)
-{
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+// void DebugMon_Handler(void)
+// {
+//   /* USER CODE BEGIN DebugMonitor_IRQn 0 */
 
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+//   /* USER CODE END DebugMonitor_IRQn 0 */
+//   /* USER CODE BEGIN DebugMonitor_IRQn 1 */
 
-  /* USER CODE END DebugMonitor_IRQn 1 */
-}
+//   /* USER CODE END DebugMonitor_IRQn 1 */
+// }
 
-/**
-  * @brief This function handles Pendable request for system service.
-  */
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
+// /**
+//   * @brief This function handles Pendable request for system service.
+//   */
+// void PendSV_Handler(void)
+// {
+// /* USER CODE BEGIN PendSV_IRQn 0 */
 
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
+// /* USER CODE END PendSV_IRQn 0 */
+//    /* USER CODE BEGIN PendSV_IRQn 1 */
 
-  /* USER CODE END PendSV_IRQn 1 */
-}
+//    /* USER CODE END PendSV_IRQn 1 */
+// }
 
-/**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
+// /**
+//   * @brief This function handles System tick timer.
+//   */
+// void SysTick_Handler(void)
+// {
+//    /* USER CODE BEGIN SysTick_IRQn 0 */
 
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+//    /* USER CODE END SysTick_IRQn 0 */
+//    HAL_IncTick();
+//    /* USER CODE BEGIN SysTick_IRQn 1 */
 
-  /* USER CODE END SysTick_IRQn 1 */
-}
+//    /* USER CODE END SysTick_IRQn 1 */
+// }
 
 /******************************************************************************/
 /* STM32L4xx Peripheral Interrupt Handlers                                    */

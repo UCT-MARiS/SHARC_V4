@@ -122,8 +122,6 @@ if(CMAKE_CROSSCOMPILING)
 		PUBLIC SHARC::RTOS
 	)
 
-	# Add the tests directory
-	add_subdirectory(tests)
 
 	target_link_options(${TARGET_EXECUTABLE} PRIVATE
 		LINKER:-Map=${CMAKE_PROJECT_NAME}.map,--cref

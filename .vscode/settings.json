@@ -22,9 +22,13 @@
     "cSpell.words": [
         "driftbuffer",
         "GPIO",
+        "GPIOB",
+        "hlpuart",
         "huart",
         "IHAL",
         "LPUART",
+        "printmsg",
+        "SHARC",
         "wavebuffer"
     ],
     

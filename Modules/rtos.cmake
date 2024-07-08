@@ -14,7 +14,7 @@ set(RTOS_HEAP    ${RTOS_DIR}/portable/MemMang/heap_4.c) # Select which heap impl
 set(FREERTOS_KERNEL_INCLUDE_DIRECTORIES
 	${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/include
     ${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/portable/GCC/ARM_CM4F
-    ${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/examples/template_configuration
+    ${CMAKE_SOURCE_DIR}/Core/Inc/RTOS_Init
 )
 
 # Source files for the Kernel, specific MCU port and heap implementation

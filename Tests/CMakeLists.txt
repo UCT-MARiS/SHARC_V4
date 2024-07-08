@@ -1,11 +1,6 @@
 # add preprocesor defintions
 add_definitions(-DSTM32L4R5xx)
 
-# Disable pthread support in GoogleTest
-add_definitions(-Dgtest_disable_pthreads=ON)
-
-find_package(Threads REQUIRED)
-
 # Define the test sources
 set(TEST_SOURCES
     hello_test.cpp
