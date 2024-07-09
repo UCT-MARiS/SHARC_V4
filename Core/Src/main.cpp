@@ -46,14 +46,16 @@ int main(void) {
 //=================================== 1. END ====================================//
 
     // Create a blinking LED task for the on-board LED.
-    const int delay = 500;
     static StaticTask_t exampleTaskTCB;
     static StackType_t exampleTaskStack[ 512 ];
+
+    // Create the blink task
+    const TickType_t xDelay = 500 / portTICK_PERIOD_MS;  // 500 ms delay
 
     TaskHandle_t returnStatus = xTaskCreateStatic( LED_task,
                                   "Blink_LED",
                                   configMINIMAL_STACK_SIZE,
-                                  (void*)&delay,
+                                  (void*)xDelay,
                                   configMAX_PRIORITIES - 1U,
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
@@ -86,13 +88,15 @@ void printmsg(char *format,...) {
     va_end(args);
 }
 
-static void LED_task(void *args) {
-  int delay_ms = *(int*)args;
+static void LED_task(void *pvParameters) {
 
-  while (1) {
-    halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-    vTaskDelay(pdMS_TO_TICKS(delay_ms));
-  }
+    TickType_t pxDelay = (TickType_t)pvParameters;
+
+    for(;;) {
+        halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
+        vTaskDelay(pxDelay);
+
+    }
 }
 
 #if ( configCHECK_FOR_STACK_OVERFLOW > 0 )
