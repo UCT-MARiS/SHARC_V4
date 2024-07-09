@@ -23,6 +23,8 @@ file(GLOB STM32CUBEL4_HAL_SOURCES
 	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc_ex.c
 	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr.c
 	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_pwr_ex.c
+	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.c
+	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.c
 	${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c
 )
 

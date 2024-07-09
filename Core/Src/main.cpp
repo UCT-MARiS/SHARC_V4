@@ -19,6 +19,7 @@ extern "C" {
 #include <queue.h>
 #include <timers.h>
 #include <semphr.h>
+#include <event_groups.h>
 #ifdef __cplusplus 
 }
 #endif
@@ -37,8 +38,11 @@ static void LED_task(void *args);
 int main(void) {
     
 //======================== 1. SYSTEM INIT & CLOCK CONFIG ========================//
+    HAL_Init();
+    SystemClock_Config();
     setupHAL(&halImpl);
-	printmsg("SHARC BUOY STARTING! \r\n");
+
+	//printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//
 
     // Create a blinking LED task for the on-board LED.

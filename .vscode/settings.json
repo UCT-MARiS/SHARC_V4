@@ -13,7 +13,8 @@
         "wave.h": "c",
         "sharc_frame.h": "c",
         "rb9603.h": "c",
-        "freertosconfig.h": "c"
+        "freertosconfig.h": "c",
+        "task.h": "c"
     },
 
     "editor.fontSize": 16,

@@ -145,8 +145,8 @@ g_pfnVectors:
 	.word	SVC_Handler
 	.word	DebugMon_Handler
 	.word	0
-	.word	PendSV_Handler
-	.word	SysTick_Handler
+	.word	PendSV_Handler 
+	.word	SysTick_Handler 
 	.word	WWDG_IRQHandler
 	.word	PVD_PVM_IRQHandler
 	.word	TAMP_STAMP_IRQHandler
