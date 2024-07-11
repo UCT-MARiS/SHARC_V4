@@ -19,6 +19,9 @@
     "trond-snekvik.gnu-mapfiles",
     "ms-vscode.makefile-tools",
     "ibm.output-colorizer",
-    "cschlosser.doxdocgen"
+    "cschlosser.doxdocgen",
+    "tomoki1207.pdf",
+    "betwo.vscode-doxygen-runner",
+    "tintinweb.graphviz-interactive-preview"
   ]
 }

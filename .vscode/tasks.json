@@ -103,6 +103,19 @@
             "dependsOn": "Build and Test with Mocks",
             "problemMatcher": [],
             "detail": "Generated task for CMake: Run Tests with Mocks"
-        }
+        },
+        {
+            "label": "Run Doxygen",
+            "type": "shell",
+            "command": "doxygen",
+            "args": [
+              "${workspaceFolder}/Doxyfile"
+            ],
+            "group": {
+              "kind": "build",
+              "isDefault": true
+            },
+            "problemMatcher": []
+          }
     ]
 }
