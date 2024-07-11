@@ -41,6 +41,30 @@
             "binaryDir": "Build/App/Debug"
         },
         {
+            "name": "RelWithDebInfo",
+            "displayName": "RelWithDebInfo",
+            "description": "Release build with debugging information.",
+            "inherits": [
+                "arm-none-eabi"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            },
+            "binaryDir": "Build/App/RelWithDebInfo"
+        },
+        {
+            "name": "Release",
+            "displayName": "Release",
+            "description": "Full optimization, no debug information.",
+            "inherits": [
+                "arm-none-eabi"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "binaryDir": "Build/App/Release"
+        },
+        {
             "name": "Custom configure preset",
             "displayName": "Custom configure preset",
             "description": "Sets Ninja generator, build and install directory",
@@ -66,6 +90,22 @@
             "displayName": "Debug",
             "description": "Target Embedded Device with Debugging options.",
             "configurePreset": "Debug",
+            "jobs": 12,
+            "verbose": false
+        },
+        {
+            "name": "RelWithDebInfo",
+            "displayName": "RelWithDebInfo",
+            "description": "Release build with debugging information.",
+            "configurePreset": "RelWithDebInfo",
+            "jobs": 12,
+            "verbose": false
+        },
+        {
+            "name": "Release",
+            "displayName": "Release",
+            "description": "Full optimization, no debug information.",
+            "configurePreset": "Release",
             "jobs": 12,
             "verbose": false
         }
