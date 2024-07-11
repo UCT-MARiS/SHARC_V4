@@ -103,6 +103,23 @@
             "dependsOn": "Build and Test with Mocks",
             "problemMatcher": [],
             "detail": "Generated task for CMake: Run Tests with Mocks"
+        },
+        {
+            "type": "shell",
+            "label": "Upload Release to STM32",
+            // Make sure to update this in your local environment OR add it to your system path
+            "command": "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe",
+            "args": [
+                "-c",
+                "port=SWD",
+                "-w",
+                "${workspaceFolder}/Build/App/Release/SHARC_FREERTOS.bin",
+                "0x08000000",  // Replace with the correct write address for your MCU
+                "-rst"
+            ],
+            "group": "none",
+            "problemMatcher": [],
+            "detail": "Upload the release binary to the STM32 using STM32CubeProgrammer CLI and reset the device"
         }
     ]
 }
