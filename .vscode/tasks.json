@@ -105,6 +105,20 @@
             "detail": "Generated task for CMake: Run Tests with Mocks"
         },
         {
+            "label": "Run Doxygen",
+            "type": "shell",
+            "command": "doxygen",
+            "args": [
+              "${workspaceFolder}/Doxyfile"
+            ],
+            "group": {
+              "kind": "build",
+              "isDefault": true
+            },
+            "problemMatcher": []
+          }
+        },
+        {
             "type": "shell",
             "label": "Upload Release to STM32",
             // Make sure to update this in your local environment OR add it to your system path
