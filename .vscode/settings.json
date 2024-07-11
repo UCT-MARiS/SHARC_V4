@@ -22,6 +22,7 @@
     "window.zoomLevel": 1.4,
     "cSpell.words": [
         "driftbuffer",
+        "eabi",
         "GPIO",
         "GPIOB",
         "hlpuart",
