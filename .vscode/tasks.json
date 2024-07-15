@@ -109,26 +109,24 @@
             "type": "shell",
             "command": "doxygen",
             "args": [
-              "${workspaceFolder}/Doxyfile"
+                "${workspaceFolder}/Doxyfile"
             ],
             "group": {
-              "kind": "build",
-              "isDefault": true
+                "kind": "build",
+                "isDefault": true
             },
             "problemMatcher": []
-          }
         },
         {
             "type": "shell",
             "label": "Upload Release to STM32",
-            // Make sure to update this in your local environment OR add it to your system path
             "command": "C:/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe",
             "args": [
                 "-c",
                 "port=SWD",
                 "-w",
                 "${workspaceFolder}/Build/App/Release/SHARC_FREERTOS.bin",
-                "0x08000000",  // Replace with the correct write address for your MCU
+                "0x08000000",
                 "-rst"
             ],
             "group": "none",

@@ -47,7 +47,7 @@ TEST_F(MainTest, MainFunctionCalls) {
     EXPECT_CALL(mockHal, MX_GPIO_Init()).Times(1);
     EXPECT_CALL(mockHal, MX_LPUART1_UART_Init()).Times(1);
 
-    // Call main
+    // Call main function of interest
     setupHAL(mockHALInstance);
 }
 

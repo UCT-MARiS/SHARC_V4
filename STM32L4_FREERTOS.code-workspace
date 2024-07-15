@@ -16,6 +16,13 @@
 			"*.tcc": "cpp",
 			"cstdint": "cpp",
 			"main.h": "c"
-		}
+		},
+		"doxdocgen.generic.authorName": "Michael Noyce",
+		"doxdocgen.generic.authorEmail": "michael.noyce@uct.ac.za",
+		"doxdocgen.generic.useGitUserEmail": true,
+		"doxdocgen.generic.useGitUserName": true
+	},
+	"extensions": {
+		"recommendations": []
 	}
 }

@@ -1,3 +1,14 @@
+/**
+ * @file hal_impl.cpp
+ * @author MichaelNoyce (NYCMIC002@myuct.ac.za)
+ * @brief Implementation of the HAL (Hardware Abstraction Layer) interface.
+ * @version 0.1
+ * @date 2024-07-15
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "hal_impl.hpp"
 
 void HAL_Impl::HAL_Init() {

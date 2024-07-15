@@ -1,6 +1,7 @@
 #include "main.hpp"
 #include "hal_interface.hpp"
 #include "hal_impl.hpp"
+#include "SensorFactory.h"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wformat"
@@ -43,7 +44,18 @@ int main(void) {
     setupHAL(&halImpl);
 
 	//printmsg("SHARC BUOY STARTING! \r\n");
+
 //=================================== 1. END ====================================//
+
+//======================== 2. Test code =========================================//
+
+    // Create Temperature Sensor using the factory
+    ISensor* tempSensor = SensorFactory::createSensor(SensorFactory::TEMPERATURE);
+    // Create Pressure Sensor using the factory
+    ISensor* pressureSensor = SensorFactory::createSensor(SensorFactory::PRESSURE);
+
+
+//======================== 2. END ===============================================//
 
     // Create a blinking LED task for the on-board LED.
     static StaticTask_t exampleTaskTCB;
@@ -62,7 +74,6 @@ int main(void) {
 
     
     printmsg("Task creation status: %d\r\n", returnStatus);
-
     
     // Start scheduler 
     vTaskStartScheduler();
