@@ -1,0 +1,55 @@
+# Use the latest version of Ubuntu as the base image
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update package lists, install basic tools, toolchains, stlink-tools, and clean up
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    gcc-arm-none-eabi \
+    autoconf \
+    libc6-dev \
+    libc6-dev-armhf-cross \
+    automake \
+    curl \
+    build-essential \
+    git \
+    wget \
+    libtool \
+    make \
+    pkg-config \
+    ca-certificates \
+    software-properties-common \
+    clang-format \
+    clang-tidy \
+    pmccabe \
+    python3 \
+    python3-pip \
+    stlink-tools \
+    cmake \
+    xz-utils \
+    ninja-build && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip3 install setuptools
+    
+# Set the working directory
+WORKDIR /workspace
+
+# Copy your project files into the container
+COPY . /workspace
+
+# Change to the Modules subdirectory
+WORKDIR /workspace/STM32L4_FREERTOS
+
+# Set environment variable to include standard library headers
+ENV CPLUS_INCLUDE_PATH=/usr/include:/usr/arm-linux-gnueabihf/include/
+ENV C_INCLUDE_PATH=/usr/include:/usr/arm-linux-gnueabihf/include/
+
+# Export the environment variable
+RUN echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH" >> /etc/profile
+RUN echo "export C_INCLUDE_PATH=$C_INCLUDE_PATH" >> /etc/profile
+
+# Change back to the original working directory
+WORKDIR /workspace

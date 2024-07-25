@@ -55,8 +55,8 @@
                 "${workspaceFolder}/Build",
                 "-G",
                 "Ninja",
-                "-DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe",
-                "-DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe"
+                "-DCMAKE_C_COMPILER=/usr/bin/gcc",
+                "-DCMAKE_CXX_COMPILER=/usr/bin/g++"
             ],
             "group": {
                 "kind": "build",

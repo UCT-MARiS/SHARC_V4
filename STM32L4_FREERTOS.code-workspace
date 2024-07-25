@@ -15,7 +15,8 @@
 			"random": "cpp",
 			"*.tcc": "cpp",
 			"cstdint": "cpp",
-			"main.h": "c"
+			"main.h": "c",
+			"errno.h": "c"
 		},
 		"doxdocgen.generic.authorName": "Michael Noyce",
 		"doxdocgen.generic.authorEmail": "michael.noyce@uct.ac.za",
