@@ -15,7 +15,11 @@
 			"random": "cpp",
 			"*.tcc": "cpp",
 			"cstdint": "cpp",
-			"main.h": "c"
+			"main.h": "c",
+			"freertosconfig.h": "c",
+			"portmacro.h": "c",
+			"timers.h": "c",
+			"task.h": "c"
 		}
 	}
 }

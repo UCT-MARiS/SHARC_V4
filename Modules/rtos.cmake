@@ -22,6 +22,7 @@ file(GLOB FREERTOS_KERNEL_SOURCES
 	${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/*.c
     ${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/portable/MemMang/heap_4.c
     ${CMAKE_SOURCE_DIR}/Modules/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/*.c
+    ${CMAKE_SOURCE_DIR}/Core/Src/RTOS_Init/*.c
 )
 
 # FreeRTOS Library
