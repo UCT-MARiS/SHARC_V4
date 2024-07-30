@@ -1,8 +1,17 @@
+#ifdef __cplusplus 
+extern "C" {
+#endif
+
+// Include FreeRTOS headers
 #include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "timers.h"
 #include "portmacro.h"
+
+#ifdef __cplusplus 
+}
+#endif
 
 void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize )
 {

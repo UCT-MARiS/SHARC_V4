@@ -19,7 +19,8 @@
 			"freertosconfig.h": "c",
 			"portmacro.h": "c",
 			"timers.h": "c",
-			"task.h": "c"
+			"task.h": "c",
+			"freertos.h": "c"
 		}
 	}
 }

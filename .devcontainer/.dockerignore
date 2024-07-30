@@ -1,0 +1,9 @@
+# Ignore all files by default
+*
+
+# Allow the following directories and files
+!/workspace/
+!/workspace/STM32L4_FREERTOS/
+!/workspace/STM32L4_FREERTOS2/SHARC_V4/
+!.dockerignore
+!Dockerfile

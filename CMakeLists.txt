@@ -65,9 +65,9 @@ if(CMAKE_CROSSCOMPILING)
 endif()
 
 if(NOT CMAKE_CROSSCOMPILING)
-	# Set the compiler to the one provided by MSYS2
-	set(CMAKE_C_COMPILER "C:/msys64/ucrt64/bin/gcc.exe")
-	set(CMAKE_CXX_COMPILER "C:/msys64/ucrt64/bin/g++.exe")
+	# Set the compiler to gcc
+	set(CMAKE_C_COMPILER gcc)
+	set(CMAKE_CXX_COMPILER g++)
 
 	# Enable testing
 	enable_testing()

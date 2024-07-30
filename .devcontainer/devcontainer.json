@@ -1,0 +1,5 @@
+{
+    "name": "STM32 Development",
+    "dockerFile": "Dockerfile",
+    "context": ".."
+}
