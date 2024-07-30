@@ -3,4 +3,4 @@
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 [submodule "Modules/STM32CubeL4"]
 	path = Modules/STM32CubeL4
-	url = https://github.com/STMicroelectronics/STM32CubeL4.git
+	url = https://github.com/STMicroelectronics/STM32CubeL4.gits
