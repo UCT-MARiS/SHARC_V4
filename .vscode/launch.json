@@ -32,8 +32,8 @@
             "servertype": "stlink",
             "svdFile": "${workspaceFolder}/STM32L4x5.svd",
             "armToolchainPath": "/usr/bin", // Path to the ARM GCC toolchain
-            "gdbPath": "/usr/bin/arm-none-eabi-gdb", // Path to the GDB executable
-            "runToMain": true,
+            "gdbPath":"/usr/bin/gdb-multiarch", // Path to the GDB executable
+            "serverpath": "/usr/bin/st-util", // Path to the ST-LINK GDB server executable
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4

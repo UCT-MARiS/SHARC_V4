@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     gcc-arm-none-eabi \
-    gdb-arm-none-eabi \
+    gdb-multiarch \
     autoconf \
     libc6-dev \
     automake \

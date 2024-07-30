@@ -22,6 +22,7 @@
     "cschlosser.doxdocgen",
     "tomoki1207.pdf",
     "betwo.vscode-doxygen-runner",
-    "tintinweb.graphviz-interactive-preview"
+    "tintinweb.graphviz-interactive-preview",
+    "eamodio.gitlens"
   ]
 }

@@ -3,8 +3,3 @@ Build/
 
 # Doxygen Documentation
 Docs/
-
-#Submodules
-Modules/STM32CubeL4/
-Modules/googletest/
-Modules/FreeRTOS-Kernel/
