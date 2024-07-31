@@ -1,13 +1,29 @@
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-set(ARM_TOOLCHAIN_DIR "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin")
+if(WIN32)
+    #Update this based on your windows installation
+    set(ARM_TOOLCHAIN_DIR "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2021.10/bin")
+   set(CMAKE_CROSSCOMPILING TRUE)
+    set(CMAKE_SYSTEM_NAME Generic)
+elseif(UNIX)
+    set(ARM_TOOLCHAIN_DIR "/usr/bin")
+    set(CMAKE_CROSSCOMPILING TRUE)
+    set(CMAKE_SYSTEM_NAME Generic)
+endif()
+
 set(BINUTILS_PATH ${ARM_TOOLCHAIN_DIR})
 
 set(TOOLCHAIN_PREFIX ${ARM_TOOLCHAIN_DIR}/arm-none-eabi-)
 
-set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc.exe)
-set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++.exe)
+if(WIN32)
+      set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc.exe)
+      set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++.exe)
+ elseif(UNIX)
+      set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+      set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
+endif()
+
 set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
 set(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
 set(CMAKE_SIZE ${TOOLCHAIN_PREFIX}size)
