@@ -56,6 +56,7 @@ As the device is deployed in situ in an extreme environment code is developed fo
 6. If you are using windows, download MSYS2 to use GCC and GDB
 7. If you are using Unix (Linux or MacOS), make sure GCC and GDB are installed and up to date. 
 
+
 ## VS Code Hints.
 VS Code can run many command line tasks using the following shortcut: Ctrl+Shift+P (Windows)
 
@@ -74,6 +75,11 @@ You can also use Ctrl+Shift+P to access the commands in launch.json.
 tasks.json is a simple way to make command line argument repeatable and clearer. Use Ctrl+Shift+B. 
 Currently, tasks are used to upload the release binary to the STM32 MCU and build the doxygen documentation. 
 
+
+## Version Control
+The main branch has branch protection rules enabled. In order to be able to push changes to main you must do the following.
+1. Create a pull request and document the intended changes.
+2. Get the owner to accept the pull request.
 
 ## Testing
 CTest is used to run testing. Alternatively TestMate ++ can be used. CTest currently works with the "Build Server" configure preset. 
