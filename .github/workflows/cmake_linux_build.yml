@@ -22,7 +22,7 @@ jobs:
       run: docker build -t sharcv4test-image .
 
     - name: Create and start docker container
-      run: docker run -d --name sharcv4test-container sharcv4test-image -c "tail -f /dev/null"
+      run: docker run -d --name sharcv4test-container sharcv4test-image /bin/sh -c "tail -f /dev/null"
 
     - name: Verify docker container is running
       run: docker ps -q -f name=sharcv4test-container
