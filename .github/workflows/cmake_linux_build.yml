@@ -25,7 +25,7 @@ jobs:
       run: docker create --name sharcv4test-container sharcv4test-image
 
     - name: Start docker container
-      run: docker start sharcv4test-container
+      run: docker start -i sharcv4test-container
 
     - name: Verify docker container is running
       run: docker ps -q -f name=sharcv4test-container
@@ -67,7 +67,7 @@ jobs:
       run: docker create --name sharcv4test-container sharcv4test-image
 
     - name: Start docker container
-      run: docker start sharcv4test-container
+      run: docker start -i sharcv4test-container
 
     - name: Verify docker container is running
       run: docker ps -q -f name=sharcv4test-container
