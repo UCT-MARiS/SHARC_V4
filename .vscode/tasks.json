@@ -17,8 +17,8 @@
                 "fileLocation": [
                     "relative",
                     "${workspaceFolder}/Build"
-                ]
-            }
+                ],
+            },
         },
         {
             "type": "cppbuild",
@@ -81,7 +81,7 @@
                 "fileLocation": [
                     "relative",
                     "${workspaceFolder}/Build"
-                ]
+                ],
             },
             "dependsOn": "CMake: Configure",
             "detail": "Task for building the project with mocks."
@@ -134,6 +134,6 @@
             "group": "none",
             "problemMatcher": [],
             "detail": "Upload the release binary to the STM32 using STM32CubeProgrammer CLI and reset the device"
-        }
-    ]
+        },
+    ],
 }

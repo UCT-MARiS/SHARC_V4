@@ -80,7 +80,7 @@ if(NOT CMAKE_CROSSCOMPILING)
 	
 endif()
 
-if(CMAKE_CROSSCOMPILING)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
 
 	add_subdirectory(Modules)
 	
