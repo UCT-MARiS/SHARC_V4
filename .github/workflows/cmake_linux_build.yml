@@ -2,9 +2,9 @@ name: CMake with Docker
 
 on:
   push:
-    branches: [ CI_Docker ]
+    branches: [ $default-branch ]
   pull_request:
-    branches: [ CI_Docker ]
+    branches: [ $default-branch ]
 
 env:
   BUILD_TYPE: Debug
