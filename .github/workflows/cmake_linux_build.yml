@@ -30,6 +30,13 @@ jobs:
     - name: Verify docker container is running
       run: docker ps -q -f name=sharcv4test-container
 
+    - name: Check container logs
+      run: docker logs sharcv4test-container || true
+
+    - name: Inspect container
+      run: docker inspect sharcv4test-container
+
+
     - name: CMake configure
       run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Release"
 
@@ -64,6 +71,12 @@ jobs:
 
     - name: Verify docker container is running
       run: docker ps -q -f name=sharcv4test-container
+
+    - name: Check container logs
+      run: docker logs sharcv4test-container || true
+
+    - name: Inspect container
+      run: docker inspect sharcv4test-container
 
     - name: CMake configure
       run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Server"
