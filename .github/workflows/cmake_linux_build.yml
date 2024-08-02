@@ -27,6 +27,9 @@ jobs:
     - name: Start docker container
       run: docker start sharcv4test-container
 
+    - name: Verify docker container is running
+      run: docker ps -q -f name=sharcv4test-container
+
     - name: CMake configure
       run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Release"
 
@@ -58,6 +61,9 @@ jobs:
 
     - name: Start docker container
       run: docker start sharcv4test-container
+
+    - name: Verify docker container is running
+      run: docker ps -q -f name=sharcv4test-container
 
     - name: CMake configure
       run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Server"
