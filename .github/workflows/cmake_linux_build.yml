@@ -19,7 +19,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build Docker Image
-      run: docker build -t sharcv4test-image
+      run: docker build -t sharcv4test-image .
 
     - name: Create docker container
       run: docker create --name sharcv4test-container sharcv4test-image
@@ -51,7 +51,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build Docker Image
-      run: docker build -t sharcv4test-image
+      run: docker build -t sharcv4test-image .
 
     - name: Create docker container
       run: docker create --name sharcv4test-container sharcv4test-image
