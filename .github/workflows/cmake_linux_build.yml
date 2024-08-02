@@ -49,44 +49,44 @@ jobs:
           echo "Build failed"
           exit 1
         fi
-  # build_server:
-  #   runs-on: ubuntu-latest
-  #   name: Build Server and Test
+  build_server:
+    runs-on: ubuntu-latest
+    name: Build Server and Test
 
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v4
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-  #   - name: Build Docker Image
-  #     run: docker build -t sharcv4test-image .
+    - name: Build Docker Image
+      run: docker build -t sharcv4test-image .
 
-  #   - name: Create and start docker container
-  #     run: docker run -d --name sharcv4test-container sharcv4test-image -c "tail -f /dev/null"
+    - name: Create and start docker container
+      run: docker run -d --name sharcv4test-container sharcv4test-image /bin/sh -c "tail -f /dev/null"
     
-  #   - name: Verify docker container is running
-  #     run: docker ps -q -f name=sharcv4test-container
+    - name: Verify docker container is running
+      run: docker ps -q -f name=sharcv4test-container
 
-  #   - name: Check container logs
-  #     run: docker logs sharcv4test-container || true
+    - name: Check container logs
+      run: docker logs sharcv4test-container || true
 
-  #   - name: Inspect container
-  #     run: docker inspect sharcv4test-container
+    - name: Inspect container
+      run: docker inspect sharcv4test-container
 
-  #   - name: CMake configure
-  #     run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Server"
+    - name: CMake configure
+      run: docker exec sharcv4test-container cmake -B build -DCMAKE_BUILD_TYPE="Server"
 
-  #   - name: CMake Build
-  #     run: docker exec sharcv4test-container cmake --build build
+    - name: CMake Build
+      run: docker exec sharcv4test-container cmake --build build
 
-  #   - name: Check build status
-  #     # Check the build status and return success or failure
-  #     run: |
-  #       if [ $? -eq 0 ]; then
-  #         echo "Build succeeded"
-  #       else
-  #         echo "Build failed"
-  #         exit 1
-  #       fi
+    - name: Check build status
+      # Check the build status and return success or failure
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "Build succeeded"
+        else
+          echo "Build failed"
+          exit 1
+        fi
     
-  #   - name: Run tests
-  #     run: docker exec -w /workspace/build/ sharcv4test-container ctest -T test --output-on-failure
+    - name: Run tests
+      run: docker exec -w /workspace/build/ sharcv4test-container ctest -T test --output-on-failure
