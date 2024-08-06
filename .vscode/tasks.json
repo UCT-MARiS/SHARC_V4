@@ -109,13 +109,31 @@
             "type": "shell",
             "command": "doxygen",
             "args": [
-              "${workspaceFolder}/Doxyfile"
+                "${workspaceFolder}/Doxyfile"
             ],
             "group": {
-              "kind": "build",
-              "isDefault": true
+                "kind": "build",
+                "isDefault": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Convert Doxygen PDF",
+            "type": "shell",
+            "command": "pdflatex",
+            "args": [
+                "-output-directory=${workspaceFolder}/Build/Docs",
+                "${workspaceFolder}/Docs/latex/refman.tex"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/Docs/latex"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Convert Doxygen documentation to PDF"
         },
         {
         "type": "shell",
