@@ -28,6 +28,13 @@ void MX_GPIO_Init(void);
  */
 void MX_LPUART1_UART_Init(void);
 
+/**
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
+void MX_USART2_UART_Init(void);
+
 #ifdef __cplusplus
 }
 #endif
