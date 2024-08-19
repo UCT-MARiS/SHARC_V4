@@ -615,6 +615,15 @@ const uint16_t SFE_UBLOX_DAYS_SINCE_MONTH[2][12] =
         {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}  // Normal Year
 };
 
+#define BUFFER_SIZE 4096
+
+typedef struct {
+    uint8_t buffer[BUFFER_SIZE];
+    size_t head;
+    size_t tail;
+    size_t size;
+} CircularBuffer;
+
 class SFE_UBLOX_GNSS
 {
 public:
@@ -687,6 +696,12 @@ public:
 
   bool checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID);    // Method for I2C polling of data, passing any new bytes to process()
   bool checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID); // Method for serial polling of data, passing any new bytes to process()
+
+  void circular_buffer_init(CircularBuffer *cb);
+  void circular_buffer_write(CircularBuffer *cb, uint8_t data);
+  uint8_t circular_buffer_read(CircularBuffer *cb);
+
+  CircularBuffer RX_Buffer; // Circular Buffer for UART Rx Data
 
   // Process the incoming data
 
@@ -1556,6 +1571,11 @@ public:
 
 private:
   // Depending on the ubx binary response class, store binary responses into different places
+
+  friend void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+  friend void initUARTInterrupt(UART_HandleTypeDef *huart);
+  friend void initUartInterrupt(UART_HandleTypeDef *huart);
+
   enum classTypes
   {
     CLASS_NONE = 0,
@@ -1648,6 +1668,11 @@ private:
   UART_HandleTypeDef *_outputPort = NULL;
   uint8_t _csPin;     // The chip select pin
   uint32_t _spiSpeed; // The speed to use for SPI (Hz)
+
+  volatile char receivedByte = 0; // We read each character into this variable
+  volatile bool dataReceived = false; // Flag to indicate if we have received a byte of data
+
+  bool fullMessageReceived = false;
 
   uint8_t _gpsI2Caddress = 0x42; // Default 7-bit unshifted address of the ublox 6/7/8/M8/F9 series
   // This can be changed using the ublox configuration software

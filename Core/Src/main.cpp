@@ -30,6 +30,8 @@ UART_HandleTypeDef hlpuart1;
 UART_HandleTypeDef huart2;
 HAL_Impl halImpl;
 
+SFE_UBLOX_GNSS myGNSS;
+
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
@@ -46,6 +48,11 @@ int main(void) {
 
     halImpl.MX_USART2_UART_Init();
 
+    // Initialize the circular buffer
+    myGNSS.circular_buffer_init(&myGNSS.RX_Buffer);
+
+    // Initialize the UART interrupt
+    initUARTInterrupt(&huart2);
 
 	//printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//
@@ -68,14 +75,12 @@ int main(void) {
     
     printmsg("Task creation status: %d\r\n", returnStatus);
 
-    // Create GNSS Instance
-    SFE_UBLOX_GNSS myGNSS;
     //myGNSS.enableDebugging(&hlpuart1, true); // Enable debug messages over LPUART1
  
     if (myGNSS.begin(&huart2) == true)
     {
         printmsg("GNSS serial connected \r\n");
-        myGNSS.setUART1Output(COM_TYPE_NMEA); //Set the UART port to output UBX only
+        myGNSS.setUART1Output(COM_TYPE_UBX); //Set the UART port to output UBX only
         myGNSS.saveConfiguration(); //Save the current settings to flash and BBR;
 
         long latitude = myGNSS.getLatitude();   //Returns the latitude in degrees x10^-7 as a long integer
@@ -99,31 +104,39 @@ int main(void) {
         long year = myGNSS.getYear(); //Returns the year (UTC)
         printmsg("Year: %d\r\n", year);
 
-
-
-
-
-
-
-
-
         // Start scheduler 
         vTaskStartScheduler();
     }
     else
         printmsg("Unable to connect \r\n");
 
-    // Start scheduler 
-    // vTaskStartScheduler();
-
 while(1){
 	halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
 	halImpl.HAL_Delay(1000);
 }
 
+}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    // Check if the interrupt is for the correct UART instance
+    if (huart->Instance == myGNSS._serialPort->Instance) // Replace USARTx with your UART instance
+    {
+        // Read the received byte and store it in the circular buffer
+        myGNSS.circular_buffer_write(&myGNSS.RX_Buffer, myGNSS.receivedByte);
 
+        // Set the flag to indicate data has been received
+        myGNSS.dataReceived = true;
+
+        // Re-enable the UART receive interrupt
+        HAL_UART_Receive_IT(huart, (uint8_t*)&myGNSS.receivedByte, 1);
+    }
 }
 
+void initUARTInterrupt(UART_HandleTypeDef *huart)
+{
+    // Start the UART receive interrupt
+    HAL_UART_Receive_IT(huart, (uint8_t*)&myGNSS.receivedByte, 1);
+}
 
 //Debug Print
 void printmsg(char *format,...) {

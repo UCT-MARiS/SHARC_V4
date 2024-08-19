@@ -20,3 +20,5 @@ extern "C" {
  * @param hal The interface object that implements the IHAL interface.
  */
 void setupHAL(IHAL* hal);
+
+void initUARTInterrupt(UART_HandleTypeDef *huart);

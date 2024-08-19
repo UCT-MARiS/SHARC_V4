@@ -9,6 +9,8 @@
 #include "hal_interface.hpp"
 #include "hal_impl.hpp"
 #include "main.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 using namespace std;
 
@@ -632,7 +634,9 @@ bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClas
 
 } // end checkUbloxI2C()
 
- */
+*/
+
+/*
 // Checks Serial for data, passing any new bytes to process()
 bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
 {
@@ -644,7 +648,58 @@ bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedC
         process(msg[0], incomingUBX, requestedClass, requestedID);
     }
     return (true);
+} // end checkUbloxSerial() */
+
+#define DELAY_2_MS (2 / portTICK_PERIOD_MS)
+
+// Checks Serial for data, passing any new bytes to process
+bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
+{
+    //HAL_UART_Receive_IT(_serialPort,(uint8_t*)&receivedByte, 1);
+    while(RX_Buffer.size > 0)
+    {
+        dataReceived = false; // Reset the flag
+        uint8_t data = circular_buffer_read(&RX_Buffer);
+/*         printmsg("Data from buffer: 0x%02X\r\n", data); */
+        process(data, incomingUBX, requestedClass, requestedID);
+         if (fullMessageReceived)
+        {
+            fullMessageReceived = false;
+            return true;
+        } 
+        vTaskDelay(DELAY_2_MS); // Add a 2 ms delay
+    }
+    return true;
 } // end checkUbloxSerial()
+
+
+// Create circular buffer to hold incoming data
+void SFE_UBLOX_GNSS::circular_buffer_init(CircularBuffer *cb) {
+    cb->head = 0;
+    cb->tail = 0;
+    cb->size = 0;
+}
+
+void SFE_UBLOX_GNSS::circular_buffer_write(CircularBuffer *cb, uint8_t data) {
+    cb->buffer[cb->head] = data;
+    cb->head = (cb->head + 1) % BUFFER_SIZE;
+    if (cb->size < BUFFER_SIZE) {
+        cb->size++;
+    } else {
+        cb->tail = (cb->tail + 1) % BUFFER_SIZE; // Overwrite oldest data
+    }
+}
+
+uint8_t SFE_UBLOX_GNSS::circular_buffer_read(CircularBuffer *cb) {
+    if (cb->size == 0) {
+        // Buffer is empty
+        return 0;
+    }
+    uint8_t data = cb->buffer[cb->tail];
+    cb->tail = (cb->tail + 1) % BUFFER_SIZE;
+    cb->size--;
+    return data;
+}
 
 // PRIVATE: Check if we have storage allocated for an incoming "automatic" message
 bool SFE_UBLOX_GNSS::checkAutomatic(uint8_t Class, uint8_t ID)
@@ -1275,8 +1330,15 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
     else // if (activePacketBuffer == SFE_UBLOX_PACKET_PACKETAUTO)
       processUBX(incoming, &packetAuto, requestedClass, requestedID);
 
+    // After processing the payload and checksum
+    if (ubxFrameCounter == packetBuf.len + 7) // Assuming 8 bytes of header
+    {
+        fullMessageReceived = true;
+    }
+
     // Finally, increment the frame counter
     ubxFrameCounter++;
+
   }
   else if (currentSentence == SFE_UBLOX_SENTENCE_TYPE_NMEA) // Process incoming NMEA mesages. Selectively log if desired.
   {
@@ -1413,6 +1475,8 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
             flagsCopy.flags.bits.completeCopyValid = 1; // Set the complete copy valid flag
             flagsCopy.flags.bits.completeCopyRead = 0;  // Clear the complete copy read flag
             *flagsPtr = flagsCopy;                      // Update the flags
+
+            fullMessageReceived = true;
             // Callback
             if (doesThisNMEAHaveCallback()) // Do we need to copy the data into the callback copy?
             {
@@ -4252,7 +4316,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
   packetAuto.classAndIDmatch = SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED;
 
   //unsigned long startTime = HAL_GetTick();
-  for (int i = 0; i <= 150; i++)//while (hImpl.HAL_GetTick() < (startTime + (unsigned long)maxTime))
+  for (int i = 0; i <= 20; i++)//while (hImpl.HAL_GetTick() < (startTime + (unsigned long)maxTime))
   {
    if (checkUbloxInternal(outgoingUBX, requestedClass, requestedID) == true) // See if new data is available. Process bytes as they come in.
     {
