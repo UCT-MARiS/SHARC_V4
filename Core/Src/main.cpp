@@ -61,6 +61,8 @@ int main(void) {
                                   &( exampleTaskTCB ) );
 
     
+    
+    
     printmsg("Task creation status: %d\r\n", returnStatus);
 
     
@@ -92,12 +94,34 @@ static void LED_task(void *pvParameters) {
 
     TickType_t pxDelay = (TickType_t)pvParameters;
 
+    TickType_t xLastWakeTime;
+
+    const TickType_t xDelay3ms = pdMS_TO_TICKS( 3 );
+    
+    /*
+    * The xLastWakeTime variable needs to be initialized with the current tick
+    * count. Note that this is the only time the variable is explicitly
+    * written to. After this xLastWakeTime is managed automatically by the
+    * vTaskDelayUntil() API function.
+    */
+    xLastWakeTime = xTaskGetTickCount();
+    /* As per most tasks, this task is implemented in an infinite loop. */
+
     for(;;) {
         halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
         vTaskDelay(pxDelay);
 
     }
 }
+
+/**
+ * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.
+ * 
+ */
+void vApplicationIdleHook(void) {
+        // Put the Cortex-M4 into sleep mode
+        __WFI();
+    }
 
 #if ( configCHECK_FOR_STACK_OVERFLOW > 0 )
 
