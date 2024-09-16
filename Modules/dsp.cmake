@@ -1,5 +1,6 @@
 # Include only the filtering, FFT, and window function libraries
-set(DSP_LIBS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Source")
+set(DSP_LIBS_DIR "${CMAKE_SOURCE_DIR}/Modules/CMSIS-DSP/Source")
+set(DSP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Modules/CMSIS-DSP/Include")
 
 add_library(DSPFiltering STATIC
     ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_f32.c
@@ -34,23 +35,28 @@ add_library(DSPWindow STATIC
 )
 
 target_include_directories(DSPFiltering PUBLIC 
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Include
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-Core/
+${DSP_INCLUDE_DIR}
+${DSP_INCLUDE_DIR}/dsp
+${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
 )
 
 target_include_directories(DSPFFT PUBLIC 
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-Core/
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Include/dsp
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Include
+${DSP_INCLUDE_DIR}
+${DSP_INCLUDE_DIR}/dsp
+${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
 )
 
 target_include_directories(DSPWindow PUBLIC 
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-Core/
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Include)
+${DSP_INCLUDE_DIR}
+${DSP_INCLUDE_DIR}/dsp
+${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
+)
 
 target_include_directories(DSPFastMath PUBLIC 
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-Core/
-${CMAKE_CURRENT_SOURCE_DIR}/CMSIS-DSP/Include)
+${DSP_INCLUDE_DIR}
+${DSP_INCLUDE_DIR}/dsp
+${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
+)
 
 add_library(SHARC::DSPFiltering ALIAS DSPFiltering)
 add_library(SHARC::DSPFFT ALIAS DSPFFT)
