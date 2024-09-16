@@ -83,6 +83,8 @@ endif()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
 
 	add_subdirectory(Modules)
+
+	add_subdirectory(WaveProc)
 	
 	set(APPLICATION_INCLUDE_DIRECTORIES
 		${CMAKE_SOURCE_DIR}/Core/Inc
