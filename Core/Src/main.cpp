@@ -12,6 +12,7 @@ extern "C" {
 #include "string.h"
 #include <stdarg.h>
 #include "stdio.h"
+#include "arm_math.h"
 
 //FreeRTOS includes
 #include <FreeRTOS.h>
@@ -65,6 +66,31 @@ int main(void) {
     
     printmsg("Task creation status: %d\r\n", returnStatus);
 
+    // FFT operation using CMSIS DSP library
+    const uint32_t fftSize = 1024;
+    const uint32_t ifftFlag = 0;
+    const uint32_t doBitReverse = 1;
+
+    // Input signal (example: sine wave)
+    float32_t inputSignal[fftSize];
+    for (uint32_t i = 0; i < fftSize; i++) {
+        inputSignal[i] = arm_sin_f32(2 * PI * i / fftSize);
+    }
+
+    // Output buffer
+    float32_t outputSignal[fftSize];
+
+    // FFT instance
+    arm_rfft_fast_instance_f32 fftInstance;
+    arm_rfft_fast_init_f32(&fftInstance, fftSize);
+
+    // Perform FFT
+    arm_rfft_fast_f32(&fftInstance, inputSignal, outputSignal, ifftFlag);
+
+    // Print FFT result
+    for (uint32_t i = 0; i < fftSize; i++) {
+        printmsg("FFT Output[%d]: %f\r\n", i, outputSignal[i]);
+    }
     
     // Start scheduler 
     vTaskStartScheduler();
@@ -115,7 +141,7 @@ static void LED_task(void *pvParameters) {
 }
 
 /**
- * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.
+ * @brief Default mode is to put t  he Cortex-M4 in sleep mode when the RTOS is idle.
  * 
  */
 void vApplicationIdleHook(void) {
