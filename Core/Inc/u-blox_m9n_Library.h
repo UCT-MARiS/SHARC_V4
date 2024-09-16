@@ -698,7 +698,7 @@ public:
   bool checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID); // Method for serial polling of data, passing any new bytes to process()
 
   void circular_buffer_init(CircularBuffer *cb);
-  void circular_buffer_write(CircularBuffer *cb, uint8_t data);
+  void circular_buffer_write(CircularBuffer *cb, uint8_t *data, size_t length);
   uint8_t circular_buffer_read(CircularBuffer *cb);
 
   CircularBuffer RX_Buffer; // Circular Buffer for UART Rx Data
@@ -1570,12 +1570,13 @@ public:
 
 
 private:
-  // Depending on the ubx binary response class, store binary responses into different places
 
   friend void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   friend void initUARTInterrupt(UART_HandleTypeDef *huart);
-  friend void initUartInterrupt(UART_HandleTypeDef *huart);
+  friend void initUARTDMA(UART_HandleTypeDef *huart);
+  //friend void initUartInterrupt(UART_HandleTypeDef *huart);
 
+// Depending on the ubx binary response class, store binary responses into different places
   enum classTypes
   {
     CLASS_NONE = 0,
@@ -1669,8 +1670,10 @@ private:
   uint8_t _csPin;     // The chip select pin
   uint32_t _spiSpeed; // The speed to use for SPI (Hz)
 
-  volatile char receivedByte = 0; // We read each character into this variable
-  volatile bool dataReceived = false; // Flag to indicate if we have received a byte of data
+
+  uint8_t receivedBytes[1]; // We read each character into this variable
+  size_t numberOfBytes = sizeof(receivedBytes);
+  bool dataReceived = false; // Flag to indicate if we have received a byte of data
 
   bool fullMessageReceived = false;
 

@@ -1,0 +1,246 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import welch
+
+duration = 300  # seconds
+sampleRate = 1024  # samples per second
+length = sampleRate*duration
+plotSpectrum = False
+scaling = "density" # density or spectrum
+
+def generate_wave(params, duration, sample_rate):
+    """
+    Generate a linear combination of sine waves based on the given parameters.
+    
+    Parameters:
+    - params: n-dimensional numpy array with columns [amplitude, frequency, phase]
+    - duration: Duration of the time series in seconds
+    - sample_rate: Number of samples per second
+    
+    Returns:
+    - time: Time array
+    - combined_wave: Combined wave array
+    """
+    # Create a time array
+    time = np.linspace(0, duration, int(duration * sample_rate))
+    
+    # Initialize the combined wave array
+    combined_wave = np.zeros_like(time)
+    
+    # Loop through each set of parameters and generate the sine wave
+    for amplitude, frequency, phase in params:
+        sine_wave = amplitude * np.sin(2 * np.pi * frequency * time + phase)
+        combined_wave += sine_wave
+    
+    return time, combined_wave
+
+def get_one_sided(two_sided_psd, sample_rate):
+    """
+    Convert a two-sided power spectrum to a one-sided power spectrum.
+
+    Parameters:
+    - two_sided_psd: The two-sided power spectrum (1D array).
+    - sample_rate: The sampling rate of the signal (in Hz).
+
+    Returns:
+    - one_sided_psd: The one-sided power spectrum (1D array).
+    - frequencies: The corresponding frequencies for the one-sided power spectrum.
+    """
+    n = len(two_sided_psd)
+    freqs = np.fft.fftfreq(n, d=1/sample_rate)
+
+    # Only take the positive frequencies
+    pos_mask = freqs >= 0
+    one_sided_psd = two_sided_psd[pos_mask]
+
+    # Double the power values, except for the DC and Nyquist components
+    one_sided_psd[1:-1] *= 2
+
+    # Corresponding frequencies for the one-sided spectrum
+    frequencies = freqs[pos_mask]
+
+    return one_sided_psd, frequencies
+# Linear combination of Sinusoids - [Amplitude (m), Frequency (Hz), Phase (rad)]
+params = np.array([
+    [1, 1/(6), 0],         # Large, slow wave
+    #[0.2,  0.3, np.pi / 4],  # Medium wave
+    #[0.1, 0.25, np.pi / 2],  # Smaller, faster wave
+    #[0.5, 0.4, np.pi / 3],  # Even smaller, faster wave
+    #[0.1, 0.5, np.pi / 6]  # Smallest, fastest wave
+])
+
+# Simulate an ocean waveform (velocity)
+time, verticalVelocity = generate_wave(params, duration, sampleRate)
+
+# Define segment length, overlap and signal
+nperseg = int(sampleRate * duration / 2)
+noverlap = nperseg // 2 # 50% Overlap
+signal = verticalVelocity
+"""-------------------------------------------------------------------------------------------------------
+
+Obtain Wave Spectrum using the square of the integrated Fourier Transform of the velocity signal
+
+    Pipeline:
+        1.	The vertical wave velocity is recorded at 1 Hz.
+        2 .	The resulting time series is divided into x overlapping segments and each 
+            segment is windowed using a Hanning window function.
+        3.	Periodogram estimates are performed on each segment (Welch’s Method), and 
+            the segments are averaged to produce the velocity transform, V(f). 
+        4. The two-sided spectrum is converted into a one sided spectrum by doubling the 
+            power values, except for the DC and Nyquist components.
+        4.	V(f) is integrated twice. This results in the
+            displacement wave spectrum. Subsequently, the spectrum is multiplied by a 
+            correction factor (1.63 for a Hanning window) to account for the energy loss 
+            due to the window function. (Fig.). 
+        5.	Finally, a bandpass filter is applied to the spectrum, 
+            with cutoff frequencies at 0.03 Hz and 0.4 Hz. The passband range aligns
+            with the expected frequency of ocean waves. he wave parameters can now be 
+            calculated by calculating the spectral moments over the displacement time
+            series.
+
+    Note: This section assumes that it has the velocity waveform as verticalVelocity
+
+-------------------------------------------------------------------------------------------------------"""
+
+# Calculate the number of segments
+step = nperseg - noverlap
+shape = (signal.size - noverlap) // step
+segments = np.lib.stride_tricks.sliding_window_view(signal, nperseg)[::step]
+
+# Apply Hanning window to each segment
+window = np.hanning(nperseg)
+windowed_segments = segments * window 
+
+# Compute FFT of each segment
+fft_segments = np.fft.fft(windowed_segments, axis=1)/nperseg # Divide by length since it is a DFT
+
+# Scale dependent on if you want spectrum or PSD (PSD preserves area under curve)
+if scaling == 'density':
+    scale = 1 / (sampleRate*((window*window).sum()))
+    scale = 1.633**2/(sampleRate/nperseg) # sample rate/array length = frequency resolution
+elif scaling == 'spectrum':
+    scale = 1 / (window.sum()**2)
+
+# Compute periodogram for each segment and correct for energy loss due to window function
+periodograms = ((np.abs(fft_segments)) ** 2) *scale
+
+# Average the periodograms
+velocitySpectrum = periodograms.mean(axis=0)
+
+# Compute the corresponding frequencies
+frequencies = np.fft.fftfreq(nperseg, d=1/sampleRate)
+
+velocitySpectrum, frequencies = get_one_sided(velocitySpectrum, sampleRate)
+
+# Integrate to get displacement
+omega = 2 * np.pi * frequencies
+displacementSpectrum = np.zeros_like(velocitySpectrum)
+
+# Catch division by zero error
+try:
+    displacementSpectrum[0] = 0
+    displacementSpectrum[1:]= np.abs(velocitySpectrum[1:] / ((1j * omega[1:])**2))
+except ZeroDivisionError:
+    print("Division by zero encountered in displacementFourier calculation")
+
+# Apply bandpass filter to transormed signal
+lowCut = 0.03  # Low cutoff frequency in Hz
+highCut = 0.4  # High cutoff frequency in Hz
+filter_mask = np.zeros_like(frequencies)
+filter_mask[(frequencies >= lowCut) & (frequencies <= highCut)] = 1
+filter_mask[(frequencies <= -lowCut) & (frequencies >= -highCut)] = 1
+
+displacementSpectrum = displacementSpectrum * filter_mask
+
+if (plotSpectrum == True):
+    # Plot the velocity spectrum
+    plt.figure(figsize=(12, 6))
+    plt.plot(frequencies, velocitySpectrum, label='Velocity Spectrum')
+    plt.plot(frequencies, displacementSpectrum, label='Displacement Spectrum')
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Magnitude')
+    plt.title('Wave Spectrum')
+    plt.legend()
+    plt.grid()
+
+# Parameters for Welch's method
+nperseg = sampleRate*duration/2  # Length of each segment
+noverlap = nperseg // 2  # Number of points to overlap between segments
+
+# Compute the PSD using Welch's method
+frequencies_welch, psd_welch = welch(verticalVelocity, fs=sampleRate, window='hann', nperseg=nperseg, noverlap=noverlap, scaling= scaling, return_onesided=True)
+
+# Integrate to get displacement (twice since it is power signal)
+omega = 2 * np.pi * frequencies_welch
+displacementSpectrumWelch = np.zeros_like(psd_welch)
+
+try:
+    displacementSpectrumWelch[0] = 0
+    displacementSpectrumWelch[1:]= np.abs(psd_welch[1:] / ((1j * omega[1:])**2))
+except ZeroDivisionError:
+    print("Division by zero encountered in displacementSpectrum calculation")
+
+if (plotSpectrum == True):
+    # Plot the velocity spectrum
+    plt.figure(figsize=(12, 6))
+    plt.plot(frequencies_welch, psd_welch, label='Velocity Spectrum (Welch)')
+    plt.plot(frequencies_welch, displacementSpectrumWelch, label='Displacement Spectrum (Welch)')
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Magnitude')
+    plt.title('Wave Spectrum (Welch)')
+    plt.legend()
+    plt.grid()
+
+# Integrate using the trapezoidal rule
+m0 = np.trapz(displacementSpectrum, frequencies)
+m1 = np.trapz(frequencies * displacementSpectrum, frequencies)
+m2 = np.trapz(((frequencies)**2) * displacementSpectrum, frequencies)
+
+# Calculate the significant wave height (Hs)
+significant_wave_height = 4 * np.sqrt(m0)
+
+# Calculate the mean wave period
+mean_wave_period = m0 / m1
+
+# Calculate the average up-crossing period between waves
+average_zero_crossing_period = m2 / m0
+
+# Print the significant wave height
+print(f"Significant Wave Height (Hs): {significant_wave_height} meters")
+
+# Print the mean wave period
+print(f"Mean Wave Period (T_bar): {mean_wave_period} seconds")
+
+# Print the significant wave height
+print(f"Average up-crossing period between waves (T2): {average_zero_crossing_period} seconds")
+
+plt.show()
+
+t = np.linspace(0, duration, length)
+f = 1/(2*np.pi)
+
+wave = np.sin(2*np.pi*f*t)
+nperseg = length
+freq, psd = welch(wave,sampleRate,'hann', nperseg, noverlap)
+
+m0 = np.trapz(psd, freq)
+#m1 = np.trapz(frequencies * displacementSpectrum, frequencies)
+#m2 = np.trapz(((frequencies)**2) * displacementSpectrum, frequencies)
+
+# Calculate the significant wave height (Hs)
+significant_wave_height = 4 * np.sqrt(m0)
+
+# Calculate the mean wave period
+#mean_wave_period = m0 / m1
+
+# Calculate the average up-crossing period between waves
+#average_zero_crossing_period = m2 / m0
+
+# Print the significant wave height
+print(f"Significant Wave Height (Hs): {significant_wave_height} meters")
+
+# Print the mean wave period
+#print(f"Mean Wave Period (T_bar): {mean_wave_period} seconds")
+
+# Print the significant wave height
+#print(f"Average up-crossing period between waves (T2): {average_zero_crossing_period} seconds")

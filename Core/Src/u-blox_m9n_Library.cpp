@@ -648,29 +648,33 @@ bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedC
         process(msg[0], incomingUBX, requestedClass, requestedID);
     }
     return (true);
-} // end checkUbloxSerial() */
-
-#define DELAY_2_MS (2 / portTICK_PERIOD_MS)
-
+} // end checkUbloxSerial() 
+*/
+#define DELAY_1_MS (1 / portTICK_PERIOD_MS)
+#define DELAY_30_MS (30 / portTICK_PERIOD_MS)
+ 
 // Checks Serial for data, passing any new bytes to process
 bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
 {
-    //HAL_UART_Receive_IT(_serialPort,(uint8_t*)&receivedByte, 1);
+    vTaskDelay(DELAY_30_MS);
+    //while(RX_Buffer.size == 0){} // Wait for data to be available
     while(RX_Buffer.size > 0)
     {
         dataReceived = false; // Reset the flag
         uint8_t data = circular_buffer_read(&RX_Buffer);
-/*         printmsg("Data from buffer: 0x%02X\r\n", data); */
+//        printmsg("Data from buffer: 0x%02X\r\n", data);
         process(data, incomingUBX, requestedClass, requestedID);
-         if (fullMessageReceived)
+        if (fullMessageReceived)
         {
             fullMessageReceived = false;
+            //printmsg("Full Message Received \r\n");
             return true;
         } 
-        vTaskDelay(DELAY_2_MS); // Add a 2 ms delay
+        vTaskDelay(DELAY_1_MS); // Add a 1 ms delay
     }
     return true;
 } // end checkUbloxSerial()
+
 
 
 // Create circular buffer to hold incoming data
@@ -680,13 +684,15 @@ void SFE_UBLOX_GNSS::circular_buffer_init(CircularBuffer *cb) {
     cb->size = 0;
 }
 
-void SFE_UBLOX_GNSS::circular_buffer_write(CircularBuffer *cb, uint8_t data) {
-    cb->buffer[cb->head] = data;
-    cb->head = (cb->head + 1) % BUFFER_SIZE;
-    if (cb->size < BUFFER_SIZE) {
-        cb->size++;
-    } else {
-        cb->tail = (cb->tail + 1) % BUFFER_SIZE; // Overwrite oldest data
+void SFE_UBLOX_GNSS::circular_buffer_write(CircularBuffer *cb, uint8_t *data, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        cb->buffer[cb->head] = data[i];
+        cb->head = (cb->head + 1) % BUFFER_SIZE;
+        if (cb->size < BUFFER_SIZE) {
+            cb->size++;
+        } else {
+            cb->tail = (cb->tail + 1) % BUFFER_SIZE; // Overwrite oldest data
+        }
     }
 }
 
@@ -4191,17 +4197,27 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendI2cCommand(ubxPacket *outgoingUBX, uint16
 // Given a packet and payload, send everything including CRC bytesA via Serial port
 void SFE_UBLOX_GNSS::sendSerialCommand(ubxPacket *outgoingUBX)
 {
-  // Write header bytes
+
   uint8_t header[] = {UBX_SYNCH_1, UBX_SYNCH_2, outgoingUBX->cls, outgoingUBX->id, 
                       static_cast<uint8_t>(outgoingUBX->len & 0xFF), static_cast<uint8_t>(outgoingUBX->len >> 8)};
-  HAL_UART_Transmit(_serialPort, header, sizeof(header), defaultMaxWait);
-  
-  // Write payload.
-  HAL_UART_Transmit(_serialPort, outgoingUBX->payload, outgoingUBX->len, defaultMaxWait);
 
-  // Write checksum
   uint8_t checksum[] = {outgoingUBX->checksumA, outgoingUBX->checksumB};
-  HAL_UART_Transmit(_serialPort, checksum, sizeof(checksum), defaultMaxWait);
+
+  // Write header bytes
+  HAL_StatusTypeDef status =  HAL_UART_Transmit(_serialPort, header, sizeof(header), defaultMaxWait);
+  if(status == HAL_OK && _printDebug == true){
+    printmsg("Successful Transmit of Header\r\n");
+  }
+  // Write payload.
+  status =HAL_UART_Transmit(_serialPort, outgoingUBX->payload, outgoingUBX->len, defaultMaxWait);
+  if(status == HAL_OK && _printDebug == true){
+    printmsg("Successful Transmit of payload\r\n");
+  }
+  // Write checksum
+  status =HAL_UART_Transmit(_serialPort, checksum, sizeof(checksum), defaultMaxWait);
+  if(status == HAL_OK && _printDebug == true){
+    printmsg("Successful Transmit of checksum\r\n");
+  }
 }
 
 
@@ -4328,9 +4344,9 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
- //         _debugSerial->print(F("waitForACKResponse: valid data and valid ACK received after "));
- //         _debugSerial->print(millis() - startTime);
- //         _debugSerial->println(F(" msec"));
+          printmsg("waitForACKResponse: valid data and valid ACK received \r\n");
+//          _debugSerial->print(millis() - startTime);
+//          _debugSerial->println(F(" msec"));
         }
 #endif
         return (SFE_UBLOX_STATUS_DATA_RECEIVED); // We received valid data and a correct ACK!
@@ -4346,7 +4362,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
- //         _debugSerial->print(F("waitForACKResponse: no data and valid ACK after "));
+          printmsg("waitForACKResponse: no data and valid ACK received \r\n");
  //         _debugSerial->print(millis() - startTime);
  //         _debugSerial->println(F(" msec"));
         }
@@ -4366,7 +4382,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForACKResponse: data being OVERWRITTEN after "));
+            printmsg("waitForACKResponse: data being OVERWRITTEN");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4381,7 +4397,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForACKResponse: CRC failed after "));
+          printmsg("waitForACKResponse: CRC failed ");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4401,7 +4417,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForACKResponse: data was NOTACKNOWLEDGED (NACK) after "));
+          printmsg("waitForACKResponse: data was NOTACKNOWLEDGED (NACK)");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4417,7 +4433,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForACKResponse: VALID data and INVALID ACK received after "));
+            printmsg("waitForACKResponse: VALID data and INVALID ACK received \r\n");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4432,7 +4448,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForACKResponse: INVALID data and INVALID ACK received after "));
+            printmsg("waitForACKResponse: INVALID data and INVALID ACK received \r\n");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4444,12 +4460,12 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
       // then the ACK has not yet been received and we should keep waiting for it
       else if ((outgoingUBX->classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_VALID) && (packetAck.classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED))
       {
-        // if (_printDebug == true)
-        // {
-        //   _debugSerial->print(F("waitForACKResponse: valid data after "));
+         if (_printDebug == true)
+         {
+             printmsg("waitForACKResponse: valid data \r\n" );
         //   _debugSerial->print(millis() - startTime);
         //   _debugSerial->println(F(" msec. Waiting for ACK."));
-        // }
+         }
       }
 
     } // checkUbloxInternal == true
@@ -4465,7 +4481,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if (_printDebug == true)
     {
-//      _debugSerial->print(F("waitForACKResponse: TIMEOUT with valid data after "));
+      printmsg("waitForACKResponse: TIMEOUT with valid data after \r\n");
 //    _debugSerial->print(millis() - startTime);
 //    _debugSerial->println(F(" msec. "));
     }
@@ -4476,7 +4492,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForACKResponse(ubxPacket *outgoingUBX, ui
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
   if (_printDebug == true)
   {
-//    _debugSerial->print(F("waitForACKResponse: TIMEOUT after "));
+      printmsg("waitForACKResponse: TIMEOUT \r\n");
 //    _debugSerial->print(millis() - startTime);
 //    _debugSerial->println(F(" msec."));
   }
@@ -4502,8 +4518,8 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
   packetBuf.classAndIDmatch = SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED;
   packetAuto.classAndIDmatch = SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED;
 
-  unsigned long startTime = HAL_GetTick();
-  for (int i = 0; i <= 150; i++)//while (hImpl.HAL_GetTick() - startTime < maxTime)
+  //unsigned long startTime = HAL_GetTick();
+  for (int i = 0; i <= 1000; i++)//while (hImpl.HAL_GetTick() - startTime < maxTime)
   {
     if (checkUbloxInternal(outgoingUBX, requestedClass, requestedID) == true) // See if new data is available. Process bytes as they come in.
     {
@@ -4516,7 +4532,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForNoACKResponse: valid data with CLS/ID match after "));
+            printmsg("waitForNoACKResponse: valid data with CLS/ID match ");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4536,7 +4552,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForNoACKResponse: data being OVERWRITTEN after "));
+            printmsg("waitForNoACKResponse: data being OVERWRITTEN");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4548,15 +4564,13 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
       // and outgoingUBX->valid is VALID then this must be (e.g.) a PVT packet
       else if ((outgoingUBX->classAndIDmatch == SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED) && (outgoingUBX->valid == SFE_UBLOX_PACKET_VALIDITY_VALID))
       {
-        // if (_printDebug == true)
-        // {
-        //   _debugSerial->print(F("waitForNoACKResponse: valid but UNWANTED data after "));
+         if (_printDebug == true)
+         {
+            printmsg("waitForNoACKResponse: valid but UNWANTED data \r\n ");
         //   _debugSerial->print(millis() - startTime);
-        //   _debugSerial->print(F(" msec. Class: "));
-        //   _debugSerial->print(outgoingUBX->cls);
-        //   _debugSerial->print(F(" ID: "));
-        //   _debugSerial->print(outgoingUBX->id);
-        // }
+            printmsg(" msec. Class: %d\r\n", outgoingUBX->cls);
+            printmsg(" ID: %d\r\n", outgoingUBX->id);
+         }
       }
 
       // If the outgoingUBX->classAndIDmatch is NOT_VALID then we return CRC failure
@@ -4565,7 +4579,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if (_printDebug == true)
         {
-//          _debugSerial->print(F("waitForNoACKResponse: CLS/ID match but failed CRC after "));
+          printmsg("waitForNoACKResponse: CLS/ID match but failed CRC \r\n");
 //          _debugSerial->print(millis() - startTime);
 //          _debugSerial->println(F(" msec"));
         }
@@ -4580,7 +4594,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
   if (_printDebug == true)
   {
-//    _debugSerial->print(F("waitForNoACKResponse: TIMEOUT after "));
+    printmsg("waitForNoACKResponse: TIMEOUT \r\n");
 //    _debugSerial->print(millis() - startTime);
 //    _debugSerial->println(F(" msec. No packet received."));
   }
@@ -10147,11 +10161,11 @@ bool SFE_UBLOX_GNSS::getPVT(uint16_t maxWait)
       return (true);
     }
 
-    // if (_printDebug == true)
-    // {
-    //   _debugSerial->print(F("getPVT retVal: "));
-    //   _debugSerial->println(statusString(retVal));
-    // }
+    if (_printDebug == true)
+     {
+        printmsg("getPVT retVal: \r\n");
+        //printmsg(statusString(retVal));
+     }
     return (false);
   }
 }
