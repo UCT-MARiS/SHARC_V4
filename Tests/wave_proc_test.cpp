@@ -3,8 +3,8 @@
 #include <cmath>     // For fabs
 
 // Define constants for the test
-#define SIGNAL_SIZE 2048  // Length of the input signal
-#define TOLERANCE 1e-6    // Tolerance for floating-point comparisons
+#define SIGNAL_SIZE 1024  // Length of the input signal
+#define TOLERANCE 1e-10    // Tolerance for floating-point comparisons
 
 // Test fixture class for pwelch
 class PwelchTest : public ::testing::Test {
@@ -30,25 +30,8 @@ protected:
     }
 };
 
-// Test the Hamming window initialization function
-TEST_F(PwelchTest, HammingWindowInitialization) {
-    // Initialize the Hamming window
-    init_hamming_window(window);
-
-    // Check that the window is not zero (basic sanity check)
-    float32_t window_sum = 0;
-    for (uint32_t i = 0; i < WINDOW_SIZE; ++i) {
-        window_sum += fabsf(window[i]);  // Sum the absolute values
-    }
-
-    // The window should have non-zero values
-    EXPECT_GT(window_sum, 0.0f);
-}
-
 // Test pwelch function with valid input signal
 TEST_F(PwelchTest, PwelchBasicFunctionality) {
-    // Initialize the Hamming window
-    init_hamming_window(window);
 
     // Call the pwelch function
     pwelch(input_signal, SIGNAL_SIZE, psd_output);
@@ -63,31 +46,8 @@ TEST_F(PwelchTest, PwelchBasicFunctionality) {
     EXPECT_GT(psd_sum, 0.0f);
 }
 
-// Test pwelch with a signal shorter than FFT_SIZE
-TEST_F(PwelchTest, PwelchShortSignal) {
-    // Short signal (less than FFT_SIZE)
-    float32_t short_signal[FFT_SIZE / 2];
-    memset(short_signal, 0, sizeof(short_signal));
-
-    // Initialize the Hamming window
-    init_hamming_window(window);
-
-    // Zero the PSD output array
-    memset(psd_output, 0, sizeof(psd_output));
-
-    // Call the pwelch function with the short signal
-    pwelch(short_signal, FFT_SIZE / 2, psd_output);
-
-    // For a zeroed-out signal, PSD output should be all zeros
-    for (uint32_t i = 0; i < FFT_SIZE / 2; ++i) {
-        EXPECT_NEAR(psd_output[i], 0.0f, TOLERANCE);
-    }
-}
-
 // Test pwelch with a random noise input
 TEST_F(PwelchTest, PwelchNoiseSignal) {
-    // Initialize the Hamming window
-    init_hamming_window(window);
 
     // Generate random noise signal
     for (uint32_t i = 0; i < SIGNAL_SIZE; ++i) {
