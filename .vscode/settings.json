@@ -15,7 +15,9 @@
         "rb9603.h": "c",
         "freertosconfig.h": "c",
         "task.h": "c",
-        "fast_math_functions.h": "c"
+        "fast_math_functions.h": "c",
+        "cmath": "cpp",
+        "wave_functions.h": "c"
     },
 
     "editor.fontSize": 16,

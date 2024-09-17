@@ -2,6 +2,17 @@
 set(DSP_LIBS_DIR "${CMAKE_SOURCE_DIR}/Modules/CMSIS-DSP/Source")
 set(DSP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Modules/CMSIS-DSP/Include")
 
+
+add_library(DSPBasicMath STATIC
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_abs_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_add_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_mult_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_scale_f32.c
+    ${DSP_LIBS_DIR}/SupportFunctions/arm_copy_f32.c
+    ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_f32.c
+    ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_squared_f32.c
+    )
+
 add_library(DSPFiltering STATIC
     ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_f32.c
     ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_init_f32.c
@@ -34,6 +45,12 @@ add_library(DSPWindow STATIC
     # Add other window function source files as needed
 )
 
+target_include_directories(DSPBasicMath PUBLIC 
+${DSP_INCLUDE_DIR}
+${DSP_INCLUDE_DIR}/dsp
+${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
+)
+
 target_include_directories(DSPFiltering PUBLIC 
 ${DSP_INCLUDE_DIR}
 ${DSP_INCLUDE_DIR}/dsp
@@ -58,6 +75,7 @@ ${DSP_INCLUDE_DIR}/dsp
 ${CMAKE_SOURCE_DIR}/Modules/CMSIS-Core/
 )
 
+add_library(SHARC::DSPBasicMath ALIAS DSPBasicMath)
 add_library(SHARC::DSPFiltering ALIAS DSPFiltering)
 add_library(SHARC::DSPFFT ALIAS DSPFFT)
 add_library(SHARC::DSPWindow ALIAS DSPWindow)

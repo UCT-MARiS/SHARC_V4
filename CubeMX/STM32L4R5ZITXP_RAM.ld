@@ -7,7 +7,7 @@
 **
 **  Abstract    : Linker script for NUCLEO-L4R5ZI-P Board embedding STM32L4R5ZITxP Device from stm32l4plus series
 **                      2048KBytes FLASH
-**                      640KBytes RAM
+**                      192KBytes RAM
 **                      64KBytes RAM2
 **                      384KBytes RAM3
 **
@@ -46,7 +46,7 @@ _Min_Stack_Size = 0x1600; /* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 640K
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 192K
   RAM2    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
   RAM3    (xrw)    : ORIGIN = 0x20040000,   LENGTH = 384K
   FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 2048K
