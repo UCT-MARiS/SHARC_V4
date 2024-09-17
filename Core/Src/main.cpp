@@ -8,11 +8,20 @@
 #ifdef __cplusplus 
 extern "C" {
 #endif
+
+//HAL Includes
 #include "init.h"
+
+//Standard Includes
 #include "string.h"
 #include <stdarg.h>
 #include "stdio.h"
+
+// DSP Library Includes
 #include "arm_math.h"
+#include "fast_math_functions.h"
+#include "transform_functions.h"
+#include "wave_functions.h"
 
 //FreeRTOS includes
 #include <FreeRTOS.h>
@@ -61,11 +70,6 @@ int main(void) {
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
-    
-    
-    
-    printmsg("Task creation status: %d\r\n", returnStatus);
-
     // FFT operation using CMSIS DSP library
     const uint32_t fftSize = 1024;
     const uint32_t ifftFlag = 0;
@@ -73,23 +77,22 @@ int main(void) {
 
     // Input signal (example: sine wave)
     float32_t inputSignal[fftSize];
+    float32_t fs1 = 20.0f;
+    float32_t fs2 = 10.0f;
+
     for (uint32_t i = 0; i < fftSize; i++) {
-        inputSignal[i] = arm_sin_f32(2 * PI * i / fftSize);
+        inputSignal[i] = arm_sin_f32(2 * PI * i * fs1 / fftSize);
     }
 
     // Output buffer
     float32_t outputSignal[fftSize];
 
-    // FFT instance
-    arm_rfft_fast_instance_f32 fftInstance;
-    arm_rfft_fast_init_f32(&fftInstance, fftSize);
-
-    // Perform FFT
-    arm_rfft_fast_f32(&fftInstance, inputSignal, outputSignal, ifftFlag);
+    // Welch PSD estimate
+    pwelch(inputSignal, fftSize, outputSignal);
 
     // Print FFT result
-    for (uint32_t i = 0; i < fftSize; i++) {
-        printmsg("FFT Output[%d]: %f\r\n", i, outputSignal[i]);
+    for (uint32_t i = 0; i < fftSize/2; i++) {
+        printmsg("%f, \r\n", i, outputSignal[i]);
     }
     
     // Start scheduler 

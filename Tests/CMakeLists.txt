@@ -10,6 +10,7 @@ set(TEST_SOURCES
     main_test.cpp
     ${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/setup_hal.cpp
     dsp_test.cpp
+    wave_proc_test.cpp
     # Add more test files as needed
 )
 
@@ -34,7 +35,12 @@ target_include_directories(run_tests PRIVATE
 
 # Add the CMSIS-DSP library to the test executable
 include(${CMAKE_SOURCE_DIR}/Modules/dsp.cmake)
+# Link the test executable with SHARC libraries
 target_link_libraries(run_tests SHARC::DSPFiltering SHARC::DSPFFT SHARC::DSPWindow SHARC::DSPFastMath)
+
+# Add WaveProc library to the test executable
+add_subdirectory(${CMAKE_SOURCE_DIR}/WaveProc ${CMAKE_BINARY_DIR}/WaveProc)
+target_link_libraries(run_tests SHARC::WaveProc)
 
 # Link the test executable with Google Test
 target_link_libraries(run_tests gtest gtest_main gmock)

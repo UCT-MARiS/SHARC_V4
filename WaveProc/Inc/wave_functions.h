@@ -23,6 +23,8 @@ extern "C" {
 #define FFT_SIZE 1024   // Size of the FFT
 #define WINDOW_SIZE FFT_SIZE  // Window size equals FFT size
 #define OVERLAP 0.5f    // 50% overlap between segments
+#define NF 1024*1024.0f // Normalization factor for length of PSD i.e. N^2
+#define CF 2.0f         // Correction factor i.e. both sides of the spectrum
 
 /**
  * @brief Function to calculate Welch's Power Spectral Density (PSD) estimate.
@@ -36,7 +38,7 @@ void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output
 /**
  * @brief Initializes the Hamming window using CMSIS-DSP library functions.
  */
-void init_hamming_window(void);
+void init_hamming_window(float32_t* window);
 
 #ifdef __cplusplus
 }

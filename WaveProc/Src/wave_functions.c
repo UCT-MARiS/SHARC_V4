@@ -21,6 +21,8 @@ void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output
         // Extract segment from the input signal
         arm_copy_f32(&input_signal[i * step_size], segment, WINDOW_SIZE);
 
+        arm_hamming_f32(window, WINDOW_SIZE);
+
         // Apply the Hamming window to the segment
         arm_mult_f32(segment, window, segment, WINDOW_SIZE);
 
@@ -30,26 +32,17 @@ void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output
         arm_rfft_fast_f32(&fft_instance, segment, fft_output, 0);
 
         // Calculate magnitude squared (periodogram)
-        for (uint32_t j = 0; j < FFT_SIZE / 2; j++) {
-            fft_output[j] = fft_output[j] * fft_output[j];
-        }
+        float32_t mag_output[FFT_SIZE / 2];
+        arm_cmplx_mag_squared_f32(fft_output, mag_output, FFT_SIZE / 2);
 
         // Accumulate power spectrum (average)
         if (i == 0) {
-            arm_copy_f32(fft_output, psd_output, FFT_SIZE / 2);
+            arm_copy_f32(mag_output, psd_output, FFT_SIZE / 2);
         } else {
-            arm_add_f32(psd_output, fft_output, psd_output, FFT_SIZE / 2);
+            arm_add_f32(psd_output, mag_output, psd_output, FFT_SIZE / 2);
         }
     }
 
     // Final averaging by number of segments
-    arm_scale_f32(psd_output, 1.0f / num_steps, psd_output, FFT_SIZE / 2);
-}
-
-/**
- * @brief Initializes the Hamming window using CMSIS-DSP library functions.
- */
-void init_hamming_window(void) {
-    // Initialize the Hamming window using CMSIS-DSP function
-    arm_hamming_window_f32(window, WINDOW_SIZE);
+    arm_scale_f32(psd_output, 1.0f / (num_steps*NF) * CF, psd_output, FFT_SIZE / 2);
 }
