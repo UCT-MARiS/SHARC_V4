@@ -62,10 +62,62 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define LED_2_Pin GPIO_PIN_14
-#define LED_2_GPIO_Port GPIOB
-#define LED_1_Pin GPIO_PIN_7
-#define LED_1_GPIO_Port GPIOB
+#define STM32_LED2_Pin GPIO_PIN_13
+#define STM32_LED2_GPIO_Port GPIOC
+#define BATT_SDA_Pin GPIO_PIN_0
+#define BATT_SDA_GPIO_Port GPIOF
+#define BATT_SCL_Pin GPIO_PIN_1
+#define BATT_SCL_GPIO_Port GPIOF
+#define IRID_ONOFF_Pin GPIO_PIN_1
+#define IRID_ONOFF_GPIO_Port GPIOC
+#define GPS_INT_Pin GPIO_PIN_3
+#define GPS_INT_GPIO_Port GPIOC
+#define GPS_TX_Pin GPIO_PIN_0
+#define GPS_TX_GPIO_Port GPIOA
+#define GPS_RX_Pin GPIO_PIN_1
+#define GPS_RX_GPIO_Port GPIOA
+#define IMU_CLKIN_Pin GPIO_PIN_2
+#define IMU_CLKIN_GPIO_Port GPIOA
+#define GPS_PPS_Pin GPIO_PIN_3
+#define GPS_PPS_GPIO_Port GPIOA
+#define ENV_CS_Pin GPIO_PIN_4
+#define ENV_CS_GPIO_Port GPIOA
+#define ENV_SCK_Pin GPIO_PIN_5
+#define ENV_SCK_GPIO_Port GPIOA
+#define ENV_MISO_Pin GPIO_PIN_6
+#define ENV_MISO_GPIO_Port GPIOA
+#define ENV_MOSI_Pin GPIO_PIN_7
+#define ENV_MOSI_GPIO_Port GPIOA
+#define IRID_TX_Pin GPIO_PIN_4
+#define IRID_TX_GPIO_Port GPIOC
+#define IRID_RX_Pin GPIO_PIN_5
+#define IRID_RX_GPIO_Port GPIOC
+#define IMU2_CS_Pin GPIO_PIN_12
+#define IMU2_CS_GPIO_Port GPIOB
+#define IMU2_SCK_Pin GPIO_PIN_13
+#define IMU2_SCK_GPIO_Port GPIOB
+#define IMU2_MISO_Pin GPIO_PIN_14
+#define IMU2_MISO_GPIO_Port GPIOB
+#define IMU2_MOSI_Pin GPIO_PIN_15
+#define IMU2_MOSI_GPIO_Port GPIOB
+#define IMU2_INT1_Pin GPIO_PIN_8
+#define IMU2_INT1_GPIO_Port GPIOD
+#define STM32_LED3_Pin GPIO_PIN_9
+#define STM32_LED3_GPIO_Port GPIOD
+#define STM32_LED1_Pin GPIO_PIN_7
+#define STM32_LED1_GPIO_Port GPIOC
+#define EXTRA_TX_Pin GPIO_PIN_5
+#define EXTRA_TX_GPIO_Port GPIOD
+#define EXTRA_RX_Pin GPIO_PIN_6
+#define EXTRA_RX_GPIO_Port GPIOD
+#define STM32_PB_Pin GPIO_PIN_7
+#define STM32_PB_GPIO_Port GPIOB
+#define IMU1_SCL_Pin GPIO_PIN_8
+#define IMU1_SCL_GPIO_Port GPIOB
+#define IMU1_SDA_Pin GPIO_PIN_9
+#define IMU1_SDA_GPIO_Port GPIOB
+#define IMU1_INT1_Pin GPIO_PIN_0
+#define IMU1_INT1_GPIO_Port GPIOE
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

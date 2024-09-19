@@ -17,7 +17,8 @@
         "task.h": "c",
         "fast_math_functions.h": "c",
         "cmath": "cpp",
-        "wave_functions.h": "c"
+        "wave_functions.h": "c",
+        "init.h": "c"
     },
 
     "editor.fontSize": 16,

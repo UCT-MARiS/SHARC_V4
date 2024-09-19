@@ -37,6 +37,10 @@ extern "C" {
 //======================== 0. Peripheral Handles ============================================================
 UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
+SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
+DMA_HandleTypeDef hdma_spi2_rx;
+DMA_HandleTypeDef hdma_spi2_tx;
 
 //======================== 0. END ============================================================================
 
