@@ -70,30 +70,8 @@ int main(void) {
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
-    // FFT operation using CMSIS DSP library
-    const uint32_t fftSize = 1024;
-    const uint32_t ifftFlag = 0;
-    const uint32_t doBitReverse = 1;
+   
 
-    // Input signal (example: sine wave)
-    float32_t inputSignal[fftSize];
-    float32_t fs1 = 20.0f;
-    float32_t fs2 = 10.0f;
-
-    for (uint32_t i = 0; i < fftSize; i++) {
-        inputSignal[i] = arm_sin_f32(2 * PI * i * fs1 / fftSize);
-    }
-
-    // Output buffer
-    float32_t outputSignal[fftSize];
-
-    // Welch PSD estimate
-    pwelch(inputSignal, fftSize, outputSignal);
-
-    // Print FFT result
-    for (uint32_t i = 0; i < fftSize/2; i++) {
-        printmsg("%f, \r\n", i, outputSignal[i]);
-    }
     
     // Start scheduler 
     vTaskStartScheduler();

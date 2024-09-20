@@ -66,3 +66,4 @@ TEST_F(PwelchTest, PwelchNoiseSignal) {
     EXPECT_GT(psd_sum, 0.0f);
 }
 
+
