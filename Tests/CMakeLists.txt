@@ -1,3 +1,6 @@
+# Enable testing
+enable_testing()
+
 # add preprocesor defintions
 add_definitions(-DSTM32L4R5xx)
 
@@ -6,6 +9,8 @@ set(TEST_SOURCES
     hello_test.cpp
     main_test.cpp
     ${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/setup_hal.cpp
+    dsp_test.cpp
+    wave_proc_test.cpp
     # Add more test files as needed
 )
 
@@ -19,6 +24,7 @@ set(MOCK_HAL_SOURCES
 add_executable(run_tests ${TEST_SOURCES} ${MOCK_HAL_SOURCES})
 
 target_include_directories(run_tests PRIVATE
+    #Main test includes
     ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Inc
     ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/CMSIS/Device/ST/STM32L4xx/Include
     ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/CMSIS/Include
@@ -26,6 +32,15 @@ target_include_directories(run_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/Core/Inc/HAL_Init
     ${CMAKE_SOURCE_DIR}/Tests/Mock/Inc
 )
+
+# Add the CMSIS-DSP library to the test executable
+include(${CMAKE_SOURCE_DIR}/Modules/dsp.cmake)
+# Link the test executable with SHARC libraries
+target_link_libraries(run_tests SHARC::DSPFiltering SHARC::DSPFFT SHARC::DSPWindow SHARC::DSPFastMath)
+
+# Add WaveProc library to the test executable
+add_subdirectory(${CMAKE_SOURCE_DIR}/WaveProc ${CMAKE_BINARY_DIR}/WaveProc)
+target_link_libraries(run_tests SHARC::WaveProc)
 
 # Link the test executable with Google Test
 target_link_libraries(run_tests gtest gtest_main gmock)
