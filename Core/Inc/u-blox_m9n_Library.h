@@ -1573,8 +1573,6 @@ private:
 
   friend void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   friend void initUARTInterrupt(UART_HandleTypeDef *huart);
-  friend void initUARTDMA(UART_HandleTypeDef *huart);
-  //friend void initUartInterrupt(UART_HandleTypeDef *huart);
 
 // Depending on the ubx binary response class, store binary responses into different places
   enum classTypes

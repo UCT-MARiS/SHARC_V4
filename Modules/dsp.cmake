@@ -23,6 +23,10 @@ add_library(DSPFFT STATIC
 add_library(DSPFastMath STATIC
     ${DSP_LIBS_DIR}/FastMathFunctions/arm_sin_f32.c
     ${DSP_LIBS_DIR}/FastMathFunctions/arm_cos_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_mult_f32.c
+    ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_f32.c
+    ${DSP_LIBS_DIR}/SupportFunctions/arm_fill_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_abs_f32.c
     # Add other fast math source files as needed
 )
 

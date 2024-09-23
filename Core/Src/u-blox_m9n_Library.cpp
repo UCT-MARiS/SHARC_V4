@@ -48,9 +48,6 @@ SFE_UBLOX_GNSS::~SFE_UBLOX_GNSS(void)
 
 // Allow the user to change packetCfgPayloadSize. Handy if you want to process big messages like RAWX
 // This can be called before .begin if required / desired
-
-// Allow the user to change packetCfgPayloadSize. Handy if you want to process big messages like RAWX
-// This can be called before .begin if required / desired
 bool SFE_UBLOX_GNSS::setPacketCfgPayloadSize(size_t payloadSize)
 {
   bool success = true;
@@ -62,8 +59,8 @@ bool SFE_UBLOX_GNSS::setPacketCfgPayloadSize(size_t payloadSize)
     payloadCfg = NULL;   // Redundant?
     packetCfg.payload = payloadCfg;
     packetCfgPayloadSize = payloadSize;
-    //if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-    //  _debugSerial->println(F("setPacketCfgPayloadSize: Zero payloadSize!"));
+    if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
+      printmsg("setPacketCfgPayloadSize: Zero payloadSize!");
   }
 
   else if (payloadCfg == NULL) // Memory has not yet been allocated - so use new
@@ -74,8 +71,8 @@ bool SFE_UBLOX_GNSS::setPacketCfgPayloadSize(size_t payloadSize)
     {
       success = false;
       packetCfgPayloadSize = 0;
-      //if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      //  _debugSerial->println(F("setPacketCfgPayloadSize: RAM alloc failed!"));
+      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
+        printmsg("setPacketCfgPayloadSize: RAM alloc failed!");
     }
     else
       packetCfgPayloadSize = payloadSize;
@@ -88,8 +85,8 @@ bool SFE_UBLOX_GNSS::setPacketCfgPayloadSize(size_t payloadSize)
     if (newPayload == NULL) // Check if the alloc was successful
     {
       success = false;                                           // Report failure. Don't change payloadCfg, packetCfg.payload or packetCfgPayloadSize
-      //if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      //  _debugSerial->println(F("setPacketCfgPayloadSize: RAM resize failed!"));
+      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
+        printmsg("setPacketCfgPayloadSize: RAM resize failed!");
     }
     else
     {
@@ -110,69 +107,6 @@ size_t SFE_UBLOX_GNSS::getPacketCfgSpaceRemaining()
   return (packetCfgPayloadSize - packetCfg.len);
 }
 
-// Initialize the I2C port
-/* bool SFE_UBLOX_GNSS::begin(I2C_HandleTypeDef *wirePort, uint8_t deviceAddress, uint16_t maxWait, bool assumeSuccess) 
-{
-  commType = COMM_TYPE_I2C;
-  _i2cPort = wirePort; // Grab which port the user wants us to use
-  _signsOfLife = false; // Clear the _signsOfLife flag. It will be set true if valid traffic is seen.
-
-  // We expect caller to begin their I2C port, with the speed of their choice external to the library
-  // But if they forget, we start the hardware here.
-
-  // We're moving away from the practice of starting Wire hardware in a library. This is to avoid cross platform issues.
-  // ie, there are some platforms that don't handle multiple starts to the wire hardware. Also, every time you start the wire
-  // hardware the clock speed reverts back to 100kHz regardless of previous Wire.setClocks().
-  //_i2cPort->begin();
-
-  _gpsI2Caddress = deviceAddress; // Store the I2C address from user
-
-  // New in v2.0: allocate memory for the packetCfg payload here - if required. (The user may have called setPacketCfgPayloadSize already)
-  if (packetCfgPayloadSize == 0)
-    setPacketCfgPayloadSize(MAX_PAYLOAD_SIZE);
-
-  // New in v2.0: allocate memory for the file buffer - if required. (The user should have called setFileBufferSize already)
-  createFileBuffer();
-
-  // Call isConnected up to three times - tests on the NEO-M8U show the CFG RATE poll occasionally being ignored
-  bool connected = isConnected(maxWait);
-
-  if (!connected)
-  {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-    if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-    {
- //     _debugSerial->println(F("begin: isConnected - second attempt"));
-    }
-#endif
-    connected = isConnected(maxWait);
-  }
-
-  if (!connected)
-  {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-    if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-    {
-//      _debugSerial->println(F("begin: isConnected - third attempt"));
-    }
-#endif
-    connected = isConnected(maxWait);
-  }
-
-  if ((!connected) && assumeSuccess && _signsOfLife) // Advanced users can assume success if required. Useful if the port is outputting messages at high navigation rate.
-  {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-    if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-    {
- //     _debugSerial->println(F("begin: third attempt failed. Assuming success..."));
-    }
-#endif
-    return (true);
-  }
-
-  return (connected);
-}
-*/
 // Initialize the Serial port
 bool SFE_UBLOX_GNSS::begin(UART_HandleTypeDef *huart, uint16_t maxWait, bool assumeSuccess)
 {
@@ -188,44 +122,25 @@ bool SFE_UBLOX_GNSS::begin(UART_HandleTypeDef *huart, uint16_t maxWait, bool ass
   // New in v2.0: allocate memory for the file buffer - if required. (The user should have called setFileBufferSize already)
   //createFileBuffer();
   uint8_t temp;
+
   // Get rid of any stale serial data already in the processor's RX buffer
   while(__HAL_UART_GET_FLAG(_serialPort, UART_FLAG_RXNE)){
     HAL_UART_Receive(_serialPort, &temp, 1, defaultMaxWait);
   }
-  // If assumeSuccess is true, the user must really want begin to succeed. So, let's empty the module's serial transmit buffer too!
-  // Keep discarding new serial data until we see a gap of 2ms - hopefully indicating that the module's TX buffer is empty.
- /*
-  if (assumeSuccess)
-  {
-    unsigned long startTime = millis();
-    unsigned long lastActivity = startTime;
-    bool keepGoing = true;
-    while (keepGoing && (millis() < (startTime + (unsigned long)maxWait)))
-    {
-      while (_serialPort->available()) // Discard any new data
-      {
-        _serialPort->read();
-        lastActivity = millis();
-      }
 
-      if (millis() > (lastActivity + (unsigned long)2)) // Check if we have seen no new data for at least 2ms
-        keepGoing = false;
-    }
-  }
-*/
   // Call isConnected up to three times - tests on the NEO-M8U show the CFG RATE poll occasionally being ignored
   bool connected = isConnected(maxWait);
   if(!connected)
 	  connected = isConnected(maxWait);
   if(!connected)
 	  connected = isConnected(maxWait);
-/*
+
   if (!connected)
   {
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-      _debugSerial->println(F("begin: isConnected - second attempt"));
+      printmsg("begin: isConnected - second attempt");
     }
 #endif
     connected = isConnected(maxWait);
@@ -236,7 +151,7 @@ bool SFE_UBLOX_GNSS::begin(UART_HandleTypeDef *huart, uint16_t maxWait, bool ass
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-      _debugSerial->println(F("begin: isConnected - third attempt"));
+      printmsg("begin: isConnected - third attempt");
     }
 #endif
     connected = isConnected(maxWait);
@@ -247,11 +162,11 @@ bool SFE_UBLOX_GNSS::begin(UART_HandleTypeDef *huart, uint16_t maxWait, bool ass
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-      _debugSerial->println(F("begin: third attempt failed. Assuming success..."));
+     printmsg("begin: third attempt failed. Assuming success...");
     }
 #endif
     return (true);
-  }*/
+  }
 
   return (connected);
 }
@@ -295,22 +210,6 @@ int8_t SFE_UBLOX_GNSS::getMaxNMEAByteCount(void)
 // Returns true if I2C device ack's
 bool SFE_UBLOX_GNSS::isConnected(uint16_t maxWait)
 {
-/*   if (commType == COMM_TYPE_I2C)
-  {
-    HAL_StatusTypeDef result;
-
-    // Start I2C transmission and check if the device responds
-    result = HAL_I2C_Master_Transmit(_i2cPort, (uint16_t)(_gpsI2Caddress << 1), NULL, 0, HAL_MAX_DELAY);
-
-    if (result != HAL_OK) {
-        // The device did not acknowledge, return false
-        return false;
-    }
-
-    // The device acknowledged, return true
-    return true;
-  } */
-
   // Query port configuration to see whether we get a meaningful response
   // We could simply request the config for any port but, just for giggles, let's request the config for most appropriate port
 /*   if (commType == COMM_TYPE_I2C)
@@ -345,7 +244,7 @@ void SFE_UBLOX_GNSS::debugPrint(char *message)
 {
   if (_printDebug == true)
   {
-    //_debugSerial->print(message);
+    printmsg(message);
   }
 }
 // Safely print messages
@@ -353,7 +252,8 @@ void SFE_UBLOX_GNSS::debugPrintln(char *message)
 {
   if (_printDebug == true)
   {
-  //  _debugSerial->println(message);
+    printmsg(message);
+    printmsg("\n");
   }
 }
 
@@ -423,251 +323,28 @@ bool SFE_UBLOX_GNSS::checkUblox(uint8_t requestedClass, uint8_t requestedID)
 {
   return checkUbloxInternal(&packetCfg, requestedClass, requestedID);
 }
-/* 
-bool SFE_UBLOX_GNSS::checkUbloxI2C(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
-{
-  if (HAL_GetTick() - lastCheck >= i2cPollingWait)
-  {
-	HAL_StatusTypeDef i2cError;
-    // Get the number of bytes available from the module
-    uint16_t bytesAvailable = 0;
-    HAL_I2C_Master_Transmit(_i2cPort,(uint16_t)(_gpsI2Caddress << 1), NULL, 0, HAL_MAX_DELAY);
-    uint8_t MSB = 0xFD;
-    i2cError = HAL_I2C_Master_Transmit(_i2cPort,(uint16_t)(_gpsI2Caddress << 1), &MSB, 1, HAL_MAX_DELAY);    // 0xFD (MSB) and 0xFE (LSB) are the registers that contain number of bytes available
-    if (i2cError != HAL_OK)
-    {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      {
- //       _debugSerial->print(F("checkUbloxI2C: I2C error: Device did not Ack "));
- //       _debugSerial->println(i2cError);
-      }
-#endif
-      return (false); // Sensor did not ACK
-    }
-    uint8_t buffer;
-    // Forcing requestFrom to use a restart would be unwise. If bytesAvailable is zero, we want to surrender the bus.
-    HAL_StatusTypeDef result = HAL_I2C_Master_Receive(_i2cPort, _gpsI2Caddress << 1, &buffer, 2, HAL_MAX_DELAY);
-    if (result != HAL_OK)
-    {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      {
-//        _debugSerial->print(F("checkUbloxI2C: I2C error: requestFrom 0xFD returned "));
-//        _debugSerial->println(bytesReturned);
-      }
-#endif
-      return (false); // Sensor did not return 2 bytes
-    }
-    else // if (_i2cPort->available())
-    {
 
-      uint8_t msb;
-      uint8_t lsb;
-
-      HAL_I2C_Master_Receive(_i2cPort, _gpsI2Caddress << 1, &msb, 1, HAL_MAX_DELAY);
-      HAL_I2C_Master_Receive(_i2cPort, _gpsI2Caddress << 1, &lsb, 1, HAL_MAX_DELAY);
-      // if (lsb == 0xFF)
-      // {
-      //   //I believe this is a u-blox bug. Device should never present an 0xFF.
-      //   if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      //   {
-      //     _debugSerial->print(F("checkUbloxI2C: u-blox bug? Length lsb is 0xFF. i2cPollingWait is "));
-      //     _debugSerial->println(i2cPollingWait);
-      //   }
-      //   if (debugPin >= 0)
-      //   {
-      //     digitalWrite((uint8_t)debugPin, LOW);
-      //     delay(10);
-      //     digitalWrite((uint8_t)debugPin, HIGH);
-      //   }
-      //   lastCheck = millis(); //Put off checking to avoid I2C bus traffic
-      //   return (false);
-      // }
-      // if (msb == 0xFF)
-      // {
-      //   //I believe this is a u-blox bug. Device should never present an 0xFF.
-      //   if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      //   {
-      //     _debugSerial->print(F("checkUbloxI2C: u-blox bug? Length msb is 0xFF. i2cPollingWait is "));
-      //     _debugSerial->println(i2cPollingWait);
-      //   }
-      //   if (debugPin >= 0)
-      //   {
-      //     digitalWrite((uint8_t)debugPin, LOW);
-      //     delay(10);
-      //     digitalWrite((uint8_t)debugPin, HIGH);
-      //   }
-      //   lastCheck = millis(); //Put off checking to avoid I2C bus traffic
-      //   return (false);
-      // }
-      bytesAvailable = (uint16_t)msb << 8 | lsb;
-    }
-
-    if (bytesAvailable == 0)
-    {
-#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-      if (_printDebug == true)
-      {
- //       _debugSerial->println(F("checkUbloxI2C: OK, zero bytes available"));
-      }
-#endif
-      lastCheck = HAL_GetTick(); // Put off checking to avoid I2C bus traffic
-      return (false);
-    }
-
-    // Check for undocumented bit error. We found this doing logic scans.
-    // This error is rare but if we incorrectly interpret the first bit of the two 'data available' bytes as 1
-    // then we have far too many bytes to check. May be related to I2C setup time violations: https://github.com/sparkfun/SparkFun_Ublox_Arduino_Library/issues/40
-    if (bytesAvailable & ((uint16_t)1 << 15))
-    {
-      // Clear the MSbit
-      bytesAvailable &= ~((uint16_t)1 << 15);
-
-      // if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-      // {
-      //   _debugSerial->print(F("checkUbloxI2C: Bytes available error: "));
-      //   _debugSerial->println(bytesAvailable);
-      //   if (debugPin >= 0)
-      //   {
-      //     digitalWrite((uint8_t)debugPin, LOW);
-      //     delay(10);
-      //     digitalWrite((uint8_t)debugPin, HIGH);
-      //   }
-      // }
-    }
-
-//#ifndef SFE_UBLOX_REDUCED_PROG_MEM
-//    if (bytesAvailable > 100)
-//    {
-//      if (_printDebug == true)
-//      {
-//        _debugSerial->print(F("checkUbloxI2C: Large packet of "));
-//        _debugSerial->print(bytesAvailable);
-//        _debugSerial->println(F(" bytes received"));
-//      }
-//    }
-//    else
-//    {
-//      if (_printDebug == true)
-//      {
-//        _debugSerial->print(F("checkUbloxI2C: Reading "));
-//        _debugSerial->print(bytesAvailable);
-//        _debugSerial->println(F(" bytes"));
-//      }
-//    }
-//#endif
-
-    while (bytesAvailable)
-    {
-      // From the u-blox integration manual:
-      // "There are two forms of DDC read transfer. The "random access" form includes a peripheral register
-      //  address and thus allows any register to be read. The second "current address" form omits the
-      //  register address. If this second form is used, then an address pointer in the receiver is used to
-      //  determine which register to read. This address pointer will increment after each read unless it
-      //  is already pointing at register 0xFF, the highest addressable register, in which case it remains
-      //  unaltered."
-      // This means that after reading bytesAvailable from 0xFD and 0xFE, the address pointer will already be
-      // pointing at 0xFF, so we do not need to write it here. The next four lines can be commented.
-      //_i2cPort->beginTransmission(_gpsI2Caddress);
-      //_i2cPort->write(0xFF);                     //0xFF is the register to read data from
-      // if (_i2cPort->endTransmission(false) != 0) //Send a restart command. Do not release bus.
-      //  return (false);                          //Sensor did not ACK
-
-      // Limit to 32 bytes or whatever the buffer limit is for given platform
-      uint16_t bytesToRead = bytesAvailable; // 16-bit
-      if (bytesToRead > i2cTransactionSize)  // Limit for i2cTransactionSize is 8-bit
-        bytesToRead = i2cTransactionSize;
-
-      // TRY_AGAIN:
-
-      // Here it would be desireable to use a restart where possible / supported, but only if there will be multiple reads.
-      // However, if an individual requestFrom fails, we could end up leaving the bus hanging.
-      // On balance, it is probably safest to not use restarts here.
-      uint8_t bytesReturned;
-
-      HAL_StatusTypeDef result;
-      result = HAL_I2C_Master_Receive(_i2cPort, _gpsI2Caddress << 1, &bytesReturned, bytesToRead, HAL_MAX_DELAY);
-      if (result == HAL_OK)
-      {
-        for (uint16_t x = 0; x < bytesToRead; x++)
-        {
-        	uint8_t incoming;
-        	HAL_I2C_Master_Receive(_i2cPort, _gpsI2Caddress << 1, &incoming, 1, HAL_MAX_DELAY);
-
-          // Check to see if the first read is 0x7F. If it is, the module is not ready to respond. Stop, wait, and try again.
-          // Note: the integration manual says:
-          //"If there is no data awaiting transmission from the receiver, then this register will deliver the value 0xFF,
-          //  which cannot be the first byte of a valid message."
-          // But it can be the first byte waiting to be read from the buffer if we have already read part of the message.
-          // Therefore I think this check needs to be commented.
-          //  if (x == 0)
-          //  {
-          //    if ((incoming == 0x7F) && (ubx7FcheckDisabled == false))
-          //    {
-          //      if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-          //      {
-          //        _debugSerial->println(F("checkUbloxU2C: u-blox error, module not ready with data (7F error)"));
-          //      }
-          //      delay(5); //In logic analyzation, the module starting responding after 1.48ms
-          //      if (debugPin >= 0)
-          //      {
-          //        digitalWrite((uint8_t)debugPin, LOW);
-          //        delay(10);
-          //        digitalWrite((uint8_t)debugPin, HIGH);
-          //      }
-          //      goto TRY_AGAIN;
-          //    }
-          //  }
-
-          process(incoming, incomingUBX, requestedClass, requestedID); // Process this valid character
-        }
-      }
-      else
-        return (false); // Sensor did not respond
-
-      bytesAvailable -= bytesToRead;
-    }
-  }
-
-  return (true);
-
-} // end checkUbloxI2C()
-
-*/
-
-/*
-// Checks Serial for data, passing any new bytes to process()
-bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
-{
-    char msg[1] = {0};
-    HAL_StatusTypeDef status = HAL_UART_Receive(_serialPort, (uint8_t *)msg, sizeof(msg), defaultMaxWait);
-    //printmsg(msg, "\r\n");
-    if (status == HAL_OK)
-    {
-        process(msg[0], incomingUBX, requestedClass, requestedID);
-    }
-    return (true);
-} // end checkUbloxSerial() 
-*/
 #define DELAY_1_MS (1 / portTICK_PERIOD_MS)
 #define DELAY_30_MS (30 / portTICK_PERIOD_MS)
  
 // Checks Serial for data, passing any new bytes to process
 bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
 {
-    vTaskDelay(DELAY_30_MS);
-    //while(RX_Buffer.size == 0){} // Wait for data to be available
+    vTaskDelay(DELAY_30_MS); // Add a 30 ms delay
     while(RX_Buffer.size > 0)
     {
         dataReceived = false; // Reset the flag
         uint8_t data = circular_buffer_read(&RX_Buffer);
-//        printmsg("Data from buffer: 0x%02X\r\n", data);
         process(data, incomingUBX, requestedClass, requestedID);
+
+        if (_printDebug == true)
+        {
+            printmsg("%d\n", data);
+        }
+
         if (fullMessageReceived)
         {
             fullMessageReceived = false;
-            //printmsg("Full Message Received \r\n");
             return true;
         } 
         vTaskDelay(DELAY_1_MS); // Add a 1 ms delay
@@ -1172,10 +849,8 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
             {
-//              _debugSerial->print(F("process: getMaxPayloadSize returned ZERO!! Class: 0x"));
-//              _debugSerial->print(packetBuf.cls);
-//              _debugSerial->print(F(" ID: 0x"));
-//              _debugSerial->println(packetBuf.id);
+              printmsg("process: getMaxPayloadSize returned ZERO!! \r\nClass: 0x%x \r\n", packetBuf.cls);
+              printmsg("ID: 0x%x \r\n", packetBuf.id);
             }
 #endif
           }
@@ -1198,12 +873,10 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
             {
- /*             _debugSerial->print(F("process: memory allocation failed for \"automatic\" message: Class: 0x"));
-              _debugSerial->print(packetBuf.cls, HEX);
-              _debugSerial->print(F(" ID: 0x"));
-              _debugSerial->println(packetBuf.id, HEX);
-              _debugSerial->println(F("process: \"automatic\" message could overwrite data"));
-*/            }
+              printmsg("process: memory allocation failed for \"automatic\" message: \r\nClass:%x", packetBuf.cls);
+              printmsg(" ID: 0x%x \r\n", packetBuf.id);
+              printmsg("process: \"automatic\" message could overwrite data");
+            }
 #endif
             // The RAM allocation failed so fall back to using incomingUBX (usually packetCfg) even though we risk overwriting data
             activePacketBuffer = SFE_UBLOX_PACKET_PACKETCFG;
@@ -1222,10 +895,8 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
             if (_printDebug == true)
             {
-//              _debugSerial->print(F("process: incoming \"automatic\" message: Class: 0x"));
-//              _debugSerial->print(packetBuf.cls, HEX);
-//              _debugSerial->print(F(" ID: 0x"));
-//              _debugSerial->println(packetBuf.id, HEX);
+            printmsg("process: incoming \"automatic\" message: \r\nClass: 0x%x \r\n", packetBuf.cls);
+            printmsg("ID: 0x%x \r\n", packetBuf.id);
             }
 #endif
           }
