@@ -2,16 +2,16 @@
  * @file wave_functions.h
  * @author Michael Noyce 
  * @brief 
- * @version 0.1
- * @date 2024-09-16
+ * @version 2.1
+ * @date 2024-09-18
  * 
  * @copyright Copyright (c) 2024
  * 
  */
 
 
-#ifndef PWELCH_H
-#define PWELCH_H
+#ifndef WAVE_FUNCTIONS_H
+#define WAVE_FUNCTIONS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,9 +23,10 @@ extern "C" {
 #define FFT_SIZE 1024   // Size of the FFT
 #define WINDOW_SIZE FFT_SIZE  // Window size equals FFT size
 #define OVERLAP 0.5f    // 50% overlap between segments
-#define NF 1024*1024.0f // Normalization factor for length of PSD i.e. N^2
-#define CF 2.0f         // Correction factor i.e. both sides of the spectrum
 
+// Define constants for compute_spectral_moments
+#define SAMPLING_FREQUENCY 4        // Sampling frequency
+ 
 /**
  * @brief Function to calculate Welch's Power Spectral Density (PSD) estimate.
  * 
@@ -35,10 +36,24 @@ extern "C" {
  */
 void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output);
 
+
 /**
- * @brief Initializes the Hamming window using CMSIS-DSP library functions.
+ * @brief Compute spectral moments of a power spectral density (PSD) estimate.
+ * @param psd Pointer to the PSD estimate.
+ * @param N Length of the PSD estimate.
+ * @param moments Pointer to the array where the moments will be stored.
+ * 
  */
-void init_hamming_window(float32_t* window);
+void compute_spectral_moments(float32_t *psd, uint32_t N, float32_t *moments);
+
+
+/**
+ * @brief Calculate ocean wave parameters from spectral moments.
+ * 
+ * @param moments Array of spectral moments.
+ * @param wave_params Array to store calculated wave parameters.
+ */
+void calculate_wave_parameters(float32_t *moments, float32_t *wave_params);
 
 #ifdef __cplusplus
 }

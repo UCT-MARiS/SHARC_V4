@@ -10,7 +10,8 @@ set(TEST_SOURCES
     main_test.cpp
     ${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/setup_hal.cpp
     dsp_test.cpp
-    wave_proc_test.cpp
+    pwelch_test.cpp
+    compute_spectral_moments_test.cpp
     # Add more test files as needed
 )
 
