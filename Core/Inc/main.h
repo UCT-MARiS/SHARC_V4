@@ -66,6 +66,24 @@ void Error_Handler(void);
 #define LED_2_GPIO_Port GPIOB
 #define LED_1_Pin GPIO_PIN_7
 #define LED_1_GPIO_Port GPIOB
+#define ENV_CS_Pin GPIO_PIN_4
+#define ENV_CS_GPIO_Port GPIOA
+#define ENV_SCK_Pin GPIO_PIN_5
+#define ENV_SCK_GPIO_Port GPIOA
+#define ENV_MISO_Pin GPIO_PIN_6
+#define ENV_MISO_GPIO_Port GPIOA
+#define ENV_MOSI_Pin GPIO_PIN_7
+#define ENV_MOSI_GPIO_Port GPIOA
+#define IMU2_CS_Pin GPIO_PIN_12
+#define IMU2_CS_GPIO_Port GPIOB
+#define IMU2_SCK_Pin GPIO_PIN_13
+#define IMU2_SCK_GPIO_Port GPIOB
+#define IMU2_MISO_Pin GPIO_PIN_14
+#define IMU2_MISO_GPIO_Port GPIOB
+#define IMU2_MOSI_Pin GPIO_PIN_15
+#define IMU2_MOSI_GPIO_Port GPIOB
+#define IMU2_INT1_Pin GPIO_PIN_8
+#define IMU2_INT1_GPIO_Port GPIOD
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

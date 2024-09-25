@@ -28,6 +28,14 @@ void MX_GPIO_Init(void);
  */
 void MX_LPUART1_UART_Init(void);
 
+/**
+ * @brief SPI2 Initialization Function
+ * @param None
+ * @retval None
+ */
+
+void MX_SPI2_Init(void);
+
 #ifdef __cplusplus
 }
 #endif

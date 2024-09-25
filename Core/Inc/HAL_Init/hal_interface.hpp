@@ -23,8 +23,13 @@ public:
     virtual void MX_GPIO_Init() = 0;
     virtual void MX_LPUART1_UART_Init() = 0;
     virtual void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) = 0;
+    virtual void HAL_GPIO_WritePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState) = 0;
     virtual HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout) = 0;
     virtual void HAL_Delay(uint32_t Delay) = 0;
+    virtual void MX_SPI2_Init() = 0;
+    virtual HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout) = 0;
+    virtual HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef* hspi, uint8_t* pTxData, uint8_t* pRxData, uint16_t Size, uint32_t Timeout) = 0;
+    virtual HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef* hspi, uint8_t* pData, uint16_t Size, uint32_t Timeout) = 0;
 };
 #endif // __cplusplus
 

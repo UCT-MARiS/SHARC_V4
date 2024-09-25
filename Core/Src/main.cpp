@@ -70,11 +70,35 @@ int main(void) {
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
+    // SPI command to check if ICM42688P IMU is present
+    uint8_t who_am_i_reg = 0x75; // WHO_AM_I register address for ICM42688P
+    uint8_t who_am_i_value = 0x00; // Variable to store the read value
+    uint8_t tx_buffer[2] = { who_am_i_reg | 0x80, 0x00 }; // Read command (MSB set to 1 for read)
+    uint8_t rx_buffer[2] = { 0x00, 0x00 }; // Buffer to store received data
+
+    // Select the IMU (assuming CS pin is controlled manually)
+    halImpl.HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); // CS low
+
+    // Transmit the WHO_AM_I register address and receive the response
+    if (halImpl.HAL_SPI_TransmitReceive(&hspi2, tx_buffer, rx_buffer, 2, HAL_MAX_DELAY) == HAL_OK) {
+        who_am_i_value = rx_buffer[1]; // The second byte contains the WHO_AM_I value
+    }
+
+    // Deselect the IMU
+    halImpl.HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET); // CS high
+
+    // Check if the received value matches the expected WHO_AM_I value for ICM42688P
+    if (who_am_i_value == 0x47) {
+        printmsg("ICM42688P IMU detected!\r\n");
+    } else {
+        printmsg("ICM42688P IMU not detected!\r\n");
+    }
    
 
     
     // Start scheduler 
     vTaskStartScheduler();
+
 
 while(1){
 	halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
