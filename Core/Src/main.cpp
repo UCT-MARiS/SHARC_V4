@@ -37,7 +37,7 @@ extern "C" {
 //======================== 0. Peripheral Handles ============================================================
 UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
-
+SPI_HandleTypeDef hspi1;
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
@@ -52,7 +52,7 @@ int main(void) {
     SystemClock_Config();
     setupHAL(&halImpl);
 
-	//printmsg("SHARC BUOY STARTING! \r\n");
+	printmsg("SHARC BUOY STARTING! \r\n");
 //=================================== 1. END ====================================//
 
     // Create a blinking LED task for the on-board LED.
