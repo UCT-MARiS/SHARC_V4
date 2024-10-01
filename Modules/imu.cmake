@@ -1,0 +1,21 @@
+# Configures the ICM42688P Driver
+# Generates static libraries:
+# - SHARC::IMU
+set(ICM42688P_INCLUDE_DIRECTORIES
+    ${CMAKE_SOURCE_DIR}/Modules/ICM42688-P/Inc
+)
+
+file(GLOB ICM42688P_SOURCES
+    ${CMAKE_SOURCE_DIR}/Modules/ICM42688-P/Src/*.c
+)
+
+# HAL Library
+add_library(ICM42688P STATIC
+	${ICM42688P_SOURCES}
+)
+
+target_include_directories(ICM42688P PUBLIC
+	PUBLIC ${ICM42688P_INCLUDE_DIRECTORIES}
+)
+
+add_library(SHARC::IMU ALIAS ICM42688P)

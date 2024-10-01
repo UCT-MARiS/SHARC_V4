@@ -11,6 +11,9 @@ extern "C" {
 #define ICM42688P_OK      0
 #define ICM42688P_ERR    -1
 
+// Define NULL 
+#define NULL 0 
+
 // Device I2C Address (assuming AD0 pin is low)
 #define ICM42688P_I2C_ADDRESS  0x68
 
@@ -27,6 +30,8 @@ extern "C" {
 typedef struct {
     int8_t (*read)(uint8_t reg_addr, uint8_t *data, uint16_t len, void *intf_ptr);
     int8_t (*write)(uint8_t reg_addr, const uint8_t *data, uint16_t len, void *intf_ptr);
+    int8_t (*transmit_receive)(uint8_t *tx_data, uint8_t *rx_data, uint16_t len, void *intf_ptr);
+    void (*gpio_write_nss_pin)(uint8_t state);
     void (*delay_ms)(uint32_t period);
     void *intf_ptr;
 } icm42688p_dev_t;

@@ -17,7 +17,10 @@
         "task.h": "c",
         "fast_math_functions.h": "c",
         "cmath": "cpp",
-        "wave_functions.h": "c"
+        "wave_functions.h": "c",
+        "icm42688p.h": "c",
+        "functional": "c",
+        "xlocale": "c"
     },
 
     "editor.fontSize": 16,
@@ -25,15 +28,19 @@
     "window.zoomLevel": 1.4,
     "cSpell.words": [
         "CMSIS",
+        "datasheet",
         "driftbuffer",
         "eabi",
         "GPIO",
         "GPIOB",
+        "hdma",
         "hlpuart",
+        "hspi",
         "huart",
         "ifft",
         "IHAL",
         "LPUART",
+        "NVIC",
         "periodogram",
         "printmsg",
         "pwelch",
