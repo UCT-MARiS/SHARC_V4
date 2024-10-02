@@ -20,7 +20,8 @@
         "wave_functions.h": "c",
         "icm42688p.h": "c",
         "functional": "c",
-        "xlocale": "c"
+        "xlocale": "c",
+        "icm42688p_registers.h": "c"
     },
 
     "editor.fontSize": 16,
@@ -48,6 +49,7 @@
         "SHARC",
         "wavebuffer"
     ],
+    "C_Cpp.dimInactiveRegions": false,
     
 }
 

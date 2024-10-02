@@ -1,4 +1,5 @@
 #include "ICM42688P.h"
+#include "ICM42688P_registers.h"
 
 int8_t icm42688p_init(icm42688p_dev_t *dev) {
 
@@ -40,39 +41,55 @@ int8_t icm42688p_init(icm42688p_dev_t *dev) {
     dev->gpio_write_nss_pin(1);
 
     // Verify Device ID
-    if (who_am_i_value != ICM42688P_DEVICE_ID) {
+    if (who_am_i_value != ICM42688P_DEVICE_ID) 
+    {
         return ICM42688P_ERR;
     }
 
     // Reset the device
-    uint8_t reset_cmd = 0x00; // Assuming 0x01 resets the device; check datasheet
-    result = dev->write(ICM42688P_PWR_MGMT0_REG, &reset_cmd, 1, dev->intf_ptr);
+    BANK_0 reg = BANK_0_PWR_MGMT0;
+    uint8_t bitmask_reset = 0x0;
+    // Reset the device
+    result = dev->write(reg, &bitmask_reset, 1, dev->intf_ptr);
     if (result != ICM42688P_OK)    
     {
         return result;
     }
 
     // Wait for reset to complete
-    dev->delay_ms(10);
+    dev->delay_ms(50); // Delay 50 ms
+    
+
+    // Set the low noise mode for the accelerometer and gyroscope
+    PWR_MGMT0_BIT bitmask_accel_gyro_low_noise = PWR_MGMT0_BIT_GYRO_MODE_LOW_NOISE | PWR_MGMT0_BIT_ACCEL_MODE_LOW_NOISE;
+    // Reset the device
+    result = dev->write(reg, &bitmask_accel_gyro_low_noise, 1, dev->intf_ptr);
+    if (result != ICM42688P_OK)    
+    {
+        return result;
+    }
 
     return ICM42688P_OK;
+}
 
-    // Configure Gyroscope
-    // uint8_t gyro_config0 = 0x00; // Set default gyro settings; modify as needed
-    // result = dev->write(ICM42688P_GYRO_CONFIG0_REG, &gyro_config0, 1, dev->intf_ptr);
-    // if (result != ICM42688P_OK) 
-    // {
-    //      return result;
-    // }
+int8_t icm42688p_configure_polling(icm42688p_dev_t *dev)
+{
+    // Check if the device structure is valid
+    if (dev == NULL || dev->transmit_receive == NULL || dev->intf_ptr == NULL) {
+        return ICM42688P_ERR;
+    }
 
-    // Configure Accelerometer
-    // uint8_t accel_config0 = 0x00; // Set default accel settings; modify as needed
-    // result = dev->write(ICM42688P_ACCEL_CONFIG0_REG, &accel_config0, 1, dev->intf_ptr);
-    // if (result != ICM42688P_OK) {
-    //     return result;
-    // }
+    //status variable
+    int8_t result = ICM42688P_OK;
 
-    //return ICM42688P_OK;
+    BANK_0 bank0 = BANK_0_GYRO_CONFIG0;
+
+
+    result = dev->write(ICM42688P_PWR_MGMT0_REG, 0, 1, dev->intf_ptr);
+    if (result != ICM42688P_OK)    
+    {
+        return result;
+    }
 }
 
 int8_t icm42688p_read_accel_data(icm42688p_dev_t *dev, int16_t *accel_data) {
@@ -108,6 +125,26 @@ int8_t icm42688p_read_gyro_data(icm42688p_dev_t *dev, int16_t *gyro_data) {
 
     return ICM42688P_OK;
 }
+
+int8_t icm42688p_change_bank(icm42688p_dev_t *dev, uint8_t bank) {
+    // Check if the device structure is valid
+    if (dev == NULL || dev->write == NULL || dev->intf_ptr == NULL) {
+        return ICM42688P_ERR;
+    }
+
+    // Register address for BANK_SEL
+    BANK_0 bank_select_reg = BANK_0_REG_BANK_SEL;
+    uint8_t tx_buffer[2] = { bank_select_reg, bank };
+
+    // Write to the BANK_SEL register
+    int8_t result = dev->write(bank_select_reg, &bank, 1, dev->intf_ptr);
+    if (result != ICM42688P_OK) {
+        return result;
+    }
+
+    return ICM42688P_OK;
+}
+
 
 // int8_t icm42688p_read_fifo_dma(icm42688p_dev_t *dev, uint8_t *fifo_buffer, uint16_t buffer_length) {
 //     int8_t result;

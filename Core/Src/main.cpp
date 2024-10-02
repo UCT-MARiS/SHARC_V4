@@ -115,17 +115,17 @@ int main(void) {
 
 
 //=================================== 3. END ====================================//
-    // int16_t accel_data[3];
-    // while(1)
-    // {
-    //     // Read accelerometer data
-    //     if(icm42688p_read_accel_data(&dev, accel_data) != ICM42688P_OK) {
-    //         printmsg("Failed to read accelerometer data \r\n");
-    //     }
-    //     else{}
-    //         HAL_Delay(1000);
-    //         printmsg("Accel Data: %d, %d, %d \r\n", accel_data[0], accel_data[1], accel_data[2]);
-    // }
+    int16_t accel_data[3];
+    while(1)
+    {
+        // Read accelerometer data
+        if(icm42688p_read_accel_data(&dev, accel_data) != ICM42688P_OK) {
+            printmsg("Failed to read accelerometer data \r\n");
+        }
+        else{}
+            HAL_Delay(1000);
+            printmsg("Accel Data: %d, %d, %d \r\n", accel_data[0], accel_data[1], accel_data[2]);
+    }
 
 
 //======================== 4. TASK CREATION ============================================================
