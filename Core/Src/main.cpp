@@ -30,6 +30,8 @@ extern "C" {
 #include <timers.h>
 #include <semphr.h>
 #include <event_groups.h>
+
+
 #ifdef __cplusplus 
 }
 #endif
@@ -37,23 +39,45 @@ extern "C" {
 //======================== 0. Peripheral Handles ============================================================
 UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
+SD_HandleTypeDef hsd1;
 
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
-// Function pointers for HAL functions
+
+//Tasks
 static void LED_task(void *args); 
+
+//Debugging
+void printmsg(char *format,...);
+
 //======================== 1. END ============================================================================
 
 int main(void) {
     
-//======================== 1. SYSTEM INIT & CLOCK CONFIG ========================//
-    HAL_Init();
-    SystemClock_Config();
-    setupHAL(&halImpl);
+//======================== 2. SYSTEM INIT & CLOCK CONFIG ========================//
+    // Initialize the HAL Library
+    if(HAL_Init() != HAL_OK)
+    {
+        printmsg("HAL Library Initialization Failed! \r\n");
+        Error_Handler();
+    }
+    
+    // Note: 
+    SystemClock_Config(); // Configure the system clock
+    setupHAL(&halImpl); // Initialize the HAL with the specified interface
+    __enable_irq(); // Enable global interrupts
+    // Message to indicate that the system has started
+    printmsg("SHARC BUOY STARTING! \r\n");
 
-	//printmsg("SHARC BUOY STARTING! \r\n");
-//=================================== 1. END ====================================//
+//=================================== 2. END ====================================//
+
+//======================== 3. SENSOR INITIALIZATION ========================//
+
+
+//=================================== 3. END ====================================//
+
+//======================== 4. TASK CREATION ============================================================
 
     // Create a blinking LED task for the on-board LED.
     static StaticTask_t exampleTaskTCB;
@@ -70,20 +94,21 @@ int main(void) {
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
-   
+//======================== 4. END ============================================================
 
-    
+
     // Start scheduler 
     vTaskStartScheduler();
 
+// Never reach this point
 while(1){
-	halImpl.HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7);
-	halImpl.HAL_Delay(1000);
+	//  Do nothing
 }
 
 
 }
 
+//======================== 5. DEBUGGING FUNCTIONS ============================================================`
 
 //Debug Print
 void printmsg(char *format,...) {
@@ -96,6 +121,36 @@ void printmsg(char *format,...) {
     halImpl.HAL_UART_Transmit(&hlpuart1,(uint8_t *)str, strlen(str),HAL_MAX_DELAY);
     va_end(args);
 }
+
+//======================== 5. END ============================================================
+
+//======================== 6. General Functions ==============================================
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM6 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM6) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
+
+//======================== 6. WRAPPER FUNCTIONS ==============================================
+
+//======================== 6. END ============================================================
+
+//======================== 7. TASKS ============================================================
 
 static void LED_task(void *pvParameters) {
 
@@ -122,7 +177,7 @@ static void LED_task(void *pvParameters) {
 }
 
 /**
- * @brief Default mode is to put t  he Cortex-M4 in sleep mode when the RTOS is idle.
+ * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.
  * 
  */
 void vApplicationIdleHook(void) {
@@ -130,6 +185,9 @@ void vApplicationIdleHook(void) {
         __WFI();
     }
 
+//======================== 7. END ============================================================
+
+//======================== 8. FreeRTOS Configuration ============================================================
 #if ( configCHECK_FOR_STACK_OVERFLOW > 0 )
 
     void vApplicationStackOverflowHook( TaskHandle_t xTask,
@@ -143,5 +201,6 @@ void vApplicationIdleHook(void) {
 
 #endif /* #if ( configCHECK_FOR_STACK_OVERFLOW > 0 ) */
 
+//======================== 8. END ============================================================
 
 
