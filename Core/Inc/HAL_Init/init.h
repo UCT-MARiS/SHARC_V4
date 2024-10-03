@@ -35,6 +35,13 @@ void MX_LPUART1_UART_Init(void);
  */
 void MX_USART2_UART_Init(void);
 
+/**
+ * @brief DMA Initialization Function
+ * @param None
+ * @retval None
+ */
+void MX_DMA_Init(void);
+
 #ifdef __cplusplus
 }
 #endif

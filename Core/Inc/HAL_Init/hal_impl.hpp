@@ -13,7 +13,8 @@ public:
     void HAL_Init() override;
     void SystemClock_Config() override;
     void MX_GPIO_Init() override;
-    void MX_USART2_UART_Init() override; // Added
+    void MX_USART2_UART_Init() override;
+    void MX_DMA_Init() override;
     void MX_LPUART1_UART_Init() override;
     void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) override;
     HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout) override;

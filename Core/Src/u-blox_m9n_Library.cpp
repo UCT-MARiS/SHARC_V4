@@ -130,31 +130,27 @@ bool SFE_UBLOX_GNSS::begin(UART_HandleTypeDef *huart, uint16_t maxWait, bool ass
 
   // Call isConnected up to three times - tests on the NEO-M8U show the CFG RATE poll occasionally being ignored
   bool connected = isConnected(maxWait);
-  if(!connected)
-	  connected = isConnected(maxWait);
-  if(!connected)
-	  connected = isConnected(maxWait);
 
   if (!connected)
   {
+    connected = isConnected(maxWait);
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-      printmsg("begin: isConnected - second attempt");
+      printmsg("begin: isConnected - second attempt \r\n");
     }
 #endif
-    connected = isConnected(maxWait);
   }
 
   if (!connected)
   {
+    connected = isConnected(maxWait);
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-      printmsg("begin: isConnected - third attempt");
+      printmsg("begin: isConnected - third attempt \r\n");
     }
 #endif
-    connected = isConnected(maxWait);
   }
 
   if ((!connected) && assumeSuccess && _signsOfLife) // Advanced users can assume success if required. Useful if the port is outputting messages at high navigation rate.
@@ -325,31 +321,25 @@ bool SFE_UBLOX_GNSS::checkUblox(uint8_t requestedClass, uint8_t requestedID)
 }
 
 #define DELAY_1_MS (1 / portTICK_PERIOD_MS)
-#define DELAY_30_MS (30 / portTICK_PERIOD_MS)
+#define DELAY_50_MS (50 / portTICK_PERIOD_MS)
  
 // Checks Serial for data, passing any new bytes to process
 bool SFE_UBLOX_GNSS::checkUbloxSerial(ubxPacket *incomingUBX, uint8_t requestedClass, uint8_t requestedID)
 {
-    vTaskDelay(DELAY_30_MS); // Add a 30 ms delay
+    vTaskDelay(DELAY_50_MS); // Add a 50 ms delay
     while(RX_Buffer.size > 0)
     {
         dataReceived = false; // Reset the flag
         uint8_t data = circular_buffer_read(&RX_Buffer);
         process(data, incomingUBX, requestedClass, requestedID);
 
-        if (_printDebug == true)
-        {
-            printmsg("%d\n", data);
-        }
-
         if (fullMessageReceived)
         {
             fullMessageReceived = false;
             return true;
-        } 
-        vTaskDelay(DELAY_1_MS); // Add a 1 ms delay
+        }
     }
-    return true;
+    return false;
 } // end checkUbloxSerial()
 
 
@@ -932,10 +922,10 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
         {
-//          _debugSerial->print(F("process: ZERO LENGTH packet received: Class: 0x"));
-//          _debugSerial->print(packetBuf.cls, HEX);
-//          _debugSerial->print(F(" ID: 0x"));
-//          _debugSerial->println(packetBuf.id, HEX);
+          printmsg("process: ZERO LENGTH packet received: Class: 0x");
+          printmsg("%02X", packetBuf.cls);
+          printmsg(" ID: 0x");
+          printmsg("%02X\n", packetBuf.id);
         }
 #endif
         // If length is zero (!) this will be the first byte of the checksum so record it
@@ -985,12 +975,12 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
           if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
           {
-//            _debugSerial->print(F("process: ACK received with .len != 2: Class: 0x"));
-//            _debugSerial->print(packetBuf.payload[0], HEX);
-//            _debugSerial->print(F(" ID: 0x"));
-//            _debugSerial->print(packetBuf.payload[1], HEX);
-//            _debugSerial->print(F(" len: "));
-//            _debugSerial->println(packetBuf.len);
+            printmsg("process: ACK received with .len != 2: Class: 0x");
+            printmsg("%02X", packetBuf.payload[0]);
+            printmsg(" ID: 0x");
+            printmsg("%02X", packetBuf.payload[1]);
+            printmsg(" len: ");
+            printmsg("%d\n", packetBuf.len);
           }
 #endif
         }
@@ -1053,10 +1043,10 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
       else
 #endif
       {
-        // if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
-        // {
-        //   _debugSerial->println(F("process: non-auto NMEA message"));
-        // }
+         if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
+         {
+           printmsg("process: non-auto NMEA message \r\n");
+         }
       }
 
       // We've just received the end of the address field. Check if it is selected for logging
@@ -1092,7 +1082,7 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
           {
             if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
             {
-//              _debugSerial->println(F("process: NMEA buffer is full!"));
+              printmsg("Process: NMEA buffer is full! \r\n");
             }
           }
         }
@@ -1153,7 +1143,6 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
             flagsCopy.flags.bits.completeCopyRead = 0;  // Clear the complete copy read flag
             *flagsPtr = flagsCopy;                      // Update the flags
 
-            fullMessageReceived = true;
             // Callback
             if (doesThisNMEAHaveCallback()) // Do we need to copy the data into the callback copy?
             {
@@ -1173,13 +1162,13 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
           {
             if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
             {
-//              _debugSerial->print(F("process: NMEA checksum fail (2)! Expected "));
-//              _debugSerial->write(expectedChecksum1);
-//              _debugSerial->write(expectedChecksum2);
-//              _debugSerial->print(F(" Got "));
-//              _debugSerial->write(*(workingNMEAPtr + charsChecked));
-//              _debugSerial->write(*(workingNMEAPtr + charsChecked + 1));
-//              _debugSerial->println();
+              printmsg("process: NMEA checksum fail (2)! Expected ");
+              printmsg("%c", expectedChecksum1);
+              printmsg("%c", expectedChecksum2);
+              printmsg(" Got ");
+              printmsg("%c", *(workingNMEAPtr + charsChecked));
+              printmsg("%c", *(workingNMEAPtr + charsChecked + 1));
+              printmsg("\n");
             }
           }
         }
@@ -1187,12 +1176,13 @@ void SFE_UBLOX_GNSS::process(uint8_t incoming, ubxPacket *incomingUBX, uint8_t r
         {
           if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
           {
-//            _debugSerial->println(F("process: NMEA checksum fail (1)!"));
+            printmsg("Process: NMEA checksum fail (1)! \r\n");
           }
         }
       }
 #endif
       currentSentence = SFE_UBLOX_SENTENCE_TYPE_NONE; // All done!
+      fullMessageReceived = true;
     }
   }
   else if (currentSentence == SFE_UBLOX_SENTENCE_TYPE_RTCM)
@@ -3670,7 +3660,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
   if (_printDebug == true)
   {
-//    _debugSerial->print(F("\nSending: "));
+    printmsg("Sending: \r\n");
     printPacket(outgoingUBX, true); // Always print payload
   }
 #endif
@@ -3702,7 +3692,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
       if (_printDebug == true)
       {
-//        _debugSerial->println(F("sendCommand: Waiting for ACK response"));
+        printmsg("sendCommand: Waiting for ACK response \r\n");
       }
 #endif
       retVal = waitForACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
@@ -3712,7 +3702,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::sendCommand(ubxPacket *outgoingUBX, uint16_t 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
       if (_printDebug == true)
       {
-//        _debugSerial->println(F("sendCommand: Waiting for No ACK response"));
+        printmsg("sendCommand: Waiting for No ACK response \r\n");
       }
 #endif
       retVal = waitForNoACKResponse(outgoingUBX, outgoingUBX->cls, outgoingUBX->id, maxWait); // Wait for Ack response
@@ -3876,18 +3866,30 @@ void SFE_UBLOX_GNSS::sendSerialCommand(ubxPacket *outgoingUBX)
 
   // Write header bytes
   HAL_StatusTypeDef status =  HAL_UART_Transmit(_serialPort, header, sizeof(header), defaultMaxWait);
-  if(status == HAL_OK && _printDebug == true){
-    printmsg("Successful Transmit of Header\r\n");
+  if (_printDebug == true || _printLimitedDebug == true){
+    if (status == HAL_OK){
+      printmsg("Header sent \r\n");
+    }
+  };
+    // Write payload.
+  status = HAL_UART_Transmit(_serialPort, outgoingUBX->payload, outgoingUBX->len, defaultMaxWait);
+  if (_printDebug == true || _printLimitedDebug == true){
+    if (status == HAL_OK){
+      printmsg("Payload sent \r\n");
+    }
+    else
+    {
+      printmsg("Payload not sent. Status: %d\r\n", status);
+      printmsg("Length: %d\r\n", outgoingUBX->len);
+      printmsg("Payload: %s\r\n", outgoingUBX->payload);
+    }
   }
-  // Write payload.
-  status =HAL_UART_Transmit(_serialPort, outgoingUBX->payload, outgoingUBX->len, defaultMaxWait);
-  if(status == HAL_OK && _printDebug == true){
-    printmsg("Successful Transmit of payload\r\n");
-  }
-  // Write checksum
+    // Write checksum
   status =HAL_UART_Transmit(_serialPort, checksum, sizeof(checksum), defaultMaxWait);
-  if(status == HAL_OK && _printDebug == true){
-    printmsg("Successful Transmit of checksum\r\n");
+  if (_printDebug == true || _printLimitedDebug == true){
+    if (status == HAL_OK){
+      printmsg("Checksum sent \r\n");
+    }
   }
 }
 
@@ -3902,64 +3904,66 @@ void SFE_UBLOX_GNSS::printPacket(ubxPacket *packet, bool alwaysPrintPayload)
   printPayload |= (alwaysPrintPayload == true);
 
 #ifndef SFE_UBLOX_REDUCED_PROG_MEM
-//  if (_printDebug == true)
-//  {
-////    _debugSerial->print(F("CLS:"));
-//    if (packet->cls == UBX_CLASS_NAV) // 1
-////      _debugSerial->print(F("NAV"));
-//    else if (packet->cls == UBX_CLASS_ACK) // 5
-////      _debugSerial->print(F("ACK"));
-//    else if (packet->cls == UBX_CLASS_CFG) // 6
-////      _debugSerial->print(F("CFG"));
-//    else if (packet->cls == UBX_CLASS_MON) // 0x0A
-////      _debugSerial->print(F("MON"));
-//    else
-//    {
-////      _debugSerial->print(F("0x"));
-////     _debugSerial->print(packet->cls, HEX);
-//    }
-//
-////    _debugSerial->print(F(" ID:"));
-//    if (packet->cls == UBX_CLASS_NAV && packet->id == UBX_NAV_PVT)
-////      _debugSerial->print(F("PVT"));
-//    else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_RATE)
-////      _debugSerial->print(F("RATE"));
-//    else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_CFG)
-////      _debugSerial->print(F("SAVE"));
-//    else
-//    {
-////      _debugSerial->print(F("0x"));
-////      _debugSerial->print(packet->id, HEX);
-//    }
-//
-////    _debugSerial->print(F(" Len: 0x"));
-////    _debugSerial->print(packet->len, HEX);
+  if (_printDebug == true)
+  {
+    printmsg("CLS: ");
+    if (packet->cls == UBX_CLASS_NAV) // 1
+      printmsg("NAV \r\n");
+    else if (packet->cls == UBX_CLASS_ACK) // 5
+      printmsg("ACK \r\n");
+    else if (packet->cls == UBX_CLASS_CFG) // 6
+     printmsg("CFG \r\n");
+    else if (packet->cls == UBX_CLASS_MON) // 0x0A
+      printmsg("MON \r\n");
+    else
+    {
+      printmsg("0x%x \r\n", packet->cls);
+    }
 
+    printmsg("ID:");
+    if (packet->cls == UBX_CLASS_NAV && packet->id == UBX_NAV_PVT)
+      printmsg("PVT \r\n");
+    else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_RATE)
+      printmsg("RATE \r\n");
+    else if (packet->cls == UBX_CLASS_CFG && packet->id == UBX_CFG_CFG)
+     printmsg("SAVE \r\n");
+    else
+    {
+      printmsg("0x%x \r\n", packet->id);
+    }
+
+    if (packet->len >= 6)
+    {
+      printmsg("Len: 0x");
+      printmsg("%x", packet->len);
+    }
+    else
+    {
+      printmsg("Len: 0x0");
+      printmsg("%x", packet->len);
+    }
     if (printPayload)
     {
-//      _debugSerial->print(F(" Payload:"));
+      printmsg(" Payload: ");
 
       for (uint16_t x = 0; x < packet->len; x++)
       {
-//        _debugSerial->print(F(" "));
-//        _debugSerial->print(packet->payload[x], HEX);
+        printmsg("0x%x ", packet->payload[x]);
       }
     }
     else
     {
-//      _debugSerial->print(F(" Payload: IGNORED"));
+      printmsg(" Payload: Not printed");
     }
-//    _debugSerial->println();
+    printmsg("\r\n");
   }
 #else
   if (_printDebug == true)
   {
-//    _debugSerial->print(F("Len: 0x"));
-//    _debugSerial->print(packet->len, HEX);
+    printmsg("len: 0x%x \r\n", packet->len);
   }
 #endif
-//}
-
+}
 // When messages from the class CFG are sent to the receiver, the receiver will send an "acknowledge"(UBX - ACK - ACK) or a
 //"not acknowledge"(UBX-ACK-NAK) message back to the sender, depending on whether or not the message was processed correctly.
 // Some messages from other classes also use the same acknowledgement mechanism.
@@ -4190,7 +4194,7 @@ sfe_ublox_status_e SFE_UBLOX_GNSS::waitForNoACKResponse(ubxPacket *outgoingUBX, 
   packetAuto.classAndIDmatch = SFE_UBLOX_PACKET_VALIDITY_NOT_DEFINED;
 
   //unsigned long startTime = HAL_GetTick();
-  for (int i = 0; i <= 1000; i++)//while (hImpl.HAL_GetTick() - startTime < maxTime)
+  for (int i = 0; i <= 20; i++)//while (hImpl.HAL_GetTick() - startTime < maxTime)
   {
     if (checkUbloxInternal(outgoingUBX, requestedClass, requestedID) == true) // See if new data is available. Process bytes as they come in.
     {
@@ -6867,18 +6871,17 @@ bool SFE_UBLOX_GNSS::powerSaveMode(bool power_save, uint16_t maxWait)
 {
   // Let's begin by checking the Protocol Version as UBX_CFG_RXM is not supported on the ZED (protocol >= 27)
   uint8_t protVer = getProtocolVersionHigh(maxWait);
-  /*
+  
   if (_printDebug == true)
   {
-    _debugSerial->print(F("Protocol version is "));
-    _debugSerial->println(protVer);
+    printmsg("Protocol version is %d \r\n", protVer);
   }
-  */
+ 
   if (protVer >= 27)
   {
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-//      _debugSerial->println(F("powerSaveMode (UBX-CFG-RXM) is not supported by this protocol version"));
+      printmsg("powerSaveMode (UBX-CFG-RXM) is not supported by this protocol version \r\n");
     }
     return (false);
   }
@@ -6894,18 +6897,17 @@ uint8_t SFE_UBLOX_GNSS::getPowerSaveMode(uint16_t maxWait)
 {
   // Let's begin by checking the Protocol Version as UBX_CFG_RXM is not supported on the ZED (protocol >= 27)
   uint8_t protVer = getProtocolVersionHigh(maxWait);
-  /*
+
   if (_printDebug == true)
   {
-    _debugSerial->print(F("Protocol version is "));
-    _debugSerial->println(protVer);
+    printmsg("Protocol version is %d \r\n", protVer);
   }
-  */
+
   if (protVer >= 27)
   {
     if ((_printDebug == true) || (_printLimitedDebug == true)) // This is important. Print this if doing limited debugging
     {
-//      _debugSerial->println(F("powerSaveMode (UBX-CFG-RXM) is not supported by this protocol version"));
+      printmsg("powerSaveMode (UBX-CFG-RXM) is not supported by this protocol version \r\n");
     }
     return (255);
   }
@@ -7270,8 +7272,17 @@ bool SFE_UBLOX_GNSS::enableGNSS(bool enable, sfe_ublox_gnss_ids_e id, uint16_t m
   packetCfg.len = 0;
   packetCfg.startingSpot = 0;
 
-  if (sendCommand(&packetCfg, maxWait) != SFE_UBLOX_STATUS_DATA_RECEIVED) // We are expecting data and an ACK
-    return (false);
+  for (int i=0; i<20; i++)
+  {
+    if (sendCommand(&packetCfg, maxWait) == SFE_UBLOX_STATUS_DATA_RECEIVED){
+      break;
+    }
+    if (i == 20){
+      return (false);
+    }
+    vTaskDelay(DELAY_50_MS);
+   // We are expecting data and an ACK  
+  }
 
   uint8_t numConfigBlocks = payloadCfg[3]; // Extract the numConfigBlocks
 

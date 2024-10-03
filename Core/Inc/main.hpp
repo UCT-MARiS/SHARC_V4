@@ -12,33 +12,8 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-#define FFT_LENGTH 512
-#define SIGNAL_LENGTH 1024
-#define SEGMENT_NO 2
-#define F_SAMPLE 5
 #define FFT 0
 #define IFFT 1
-#define DECIMATION_CONSTANT 1
-
-/* Structs ---------------------------------------------------*/
-
-/*
- *  @brief Wave Data Structure
- */
-typedef struct
-{
-	float32_t Hm0; //Significant waveheight
-	float32_t Hrms; //Root mean square waveheight
-	float32_t T0; //Mean zero crossing period
-	float32_t TM01; //Mean spectral wave period
-	float32_t Tp; // Peak wave period
-	float32_t M0; //0th Spectral moment
-	float32_t M1; //1st spectral moment
-	float32_t M2; //2nd spectral moment
-	float32_t PSD[30]; //PSD Period in spectral bins
-
-}Wave_Data_t;
 
 /**
  * @brief Sets up the Hardware Abstraction Layer (HAL) with the specified interface.
@@ -48,6 +23,16 @@ typedef struct
  * @param hal The interface object that implements the IHAL interface.
  */
 void setupHAL(IHAL* hal);
+
+/**
+ * @brief Initializes the UART DMA for communication.
+ * 
+ * This function sets up the UART DMA to enable communication with other devices.
+ * 
+ * @param huart Pointer to the UART handle structure.
+ */
+
+void begin_UART_DMA(UART_HandleTypeDef *huart);
 
 /**
  * @brief Initializes the UART interrupt for communication.
@@ -68,7 +53,6 @@ void initUARTInterrupt(UART_HandleTypeDef *huart);
  */
 
 void delay(volatile uint32_t count);
-
 
 /**
  * @brief Performs a Fast Fourier Transform (FFT) on a segment of data.
@@ -105,24 +89,6 @@ void WelchMethod(float32_t* PSD, float32_t* timeSeries);
  */
 
 void singleSegmentPipeline(float32_t* singleSegment, float32_t* timeSeries, uint32_t segmentIndex);
-
-/**
- * @brief Extracts wave parameters from the PSD.
- * 
- * This function extracts wave parameters from the PSD.
- * 
- * @param PSD The input PSD.
- * @param Hm0 The output buffer for the significant wave height.
- * @param Tm01 The output buffer for the mean spectral wave period.
- * @param Hrms The output buffer for the root mean square wave height.
- * @param T0 The output buffer for the mean zero crossing period.
- * @param Tp The output buffer for the peak wave period.
- * @param M0 The output buffer for the 0th spectral moment.
- * @param M1 The output buffer for the 1st spectral moment.
- * @param M2 The output buffer for the 2nd spectral moment.
- */
-
-void waveParamExtract(float32_t* PSD, float32_t* Hm0, float32_t* Tm01, float32_t* Hrms, float32_t* T0, float32_t* Tp, float32_t*  M0, float32_t* M1, float32_t* M2);
 
 /**
  * @brief Integrates the wave amplitude array in the frequency domain.

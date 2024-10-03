@@ -615,7 +615,7 @@ const uint16_t SFE_UBLOX_DAYS_SINCE_MONTH[2][12] =
         {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}  // Normal Year
 };
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048
 
 typedef struct {
     uint8_t buffer[BUFFER_SIZE];
@@ -810,7 +810,6 @@ public:
 
     void setNMEAOutputPort(UART_HandleTypeDef *nmeaOutputPort);                  // Sets the internal variable for the port to direct NMEA characters to
     void setOutputPort(UART_HandleTypeDef *outputPort);                                      // Sets the internal variable for the port to direct ALL characters to
-
 
     // Reset to defaults
 
@@ -1572,6 +1571,8 @@ public:
 private:
 
   friend void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+  friend void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size);
+  friend void begin_UART_DMA(UART_HandleTypeDef *huart);
   friend void initUARTInterrupt(UART_HandleTypeDef *huart);
 
 // Depending on the ubx binary response class, store binary responses into different places
@@ -1669,7 +1670,7 @@ private:
   uint32_t _spiSpeed; // The speed to use for SPI (Hz)
 
 
-  uint8_t receivedBytes[1]; // We read each character into this variable
+  uint8_t receivedBytes[256]; // We read each character into this variable
   size_t numberOfBytes = sizeof(receivedBytes);
   bool dataReceived = false; // Flag to indicate if we have received a byte of data
 
