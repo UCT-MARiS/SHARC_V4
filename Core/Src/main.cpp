@@ -8,7 +8,6 @@
 #ifdef __cplusplus 
 extern "C" {
 #endif
-
 //HAL Includes
 #include "init.h"
 
@@ -31,6 +30,10 @@ extern "C" {
 #include <semphr.h>
 #include <event_groups.h>
 
+//FATFS includes
+#include "fatfs.h"
+#include "HAL_SD.h" //SD Card Interface - closely coupled to HAL
+
 
 #ifdef __cplusplus 
 }
@@ -40,7 +43,6 @@ extern "C" {
 UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
 SD_HandleTypeDef hsd1;
-
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
@@ -73,6 +75,13 @@ int main(void) {
 //=================================== 2. END ====================================//
 
 //======================== 3. SENSOR INITIALIZATION ========================//
+uint8_t status = 0; 
+//SD Init Routine
+if (SD_Init() == SD_OK) {
+    printmsg("SD Card online \r\n");
+} else {
+    printmsg("SD Card offline \r\n");
+}
 
 
 //=================================== 3. END ====================================//

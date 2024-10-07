@@ -31,3 +31,4 @@ void HAL_Impl::HAL_Delay(uint32_t Delay) {
 void HAL_Impl::MX_SDMMC1_SD_Init() {
     ::MX_SDMMC1_SD_Init();
 }
+
