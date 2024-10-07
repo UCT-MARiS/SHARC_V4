@@ -19,7 +19,7 @@ extern "C" {
 
 // Register Addresses
 #define ICM42688P_WHO_AM_I_REG      0x75
-#define ICM42688P_DEVICE_ID         0x47  // Replace with actual device ID from datasheet
+#define ICM42688P_DEVICE_ID         0x47  
 #define ICM42688P_PWR_MGMT0_REG     0x4E
 #define ICM42688P_GYRO_CONFIG0_REG  0x4F
 #define ICM42688P_ACCEL_CONFIG0_REG 0x50
@@ -38,6 +38,9 @@ typedef struct {
 
 // Function Prototypes
 int8_t icm42688p_init(icm42688p_dev_t *dev);
+int8_t icm42688p_configure_polling(icm42688p_dev_t *dev);
+int8_t icm42688p_set_accel_gyro_range(icm42688p_dev_t *dev, uint8_t accel_range, uint8_t gyro_range);
+int8_t icm42688p_set_accel_gyro_odr(icm42688p_dev_t *dev, uint8_t accel_rate, uint8_t gyro_rate);
 int8_t icm42688p_read_accel_data(icm42688p_dev_t *dev, int16_t *accel_data);
 int8_t icm42688p_read_gyro_data(icm42688p_dev_t *dev, int16_t *gyro_data);
 

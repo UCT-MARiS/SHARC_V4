@@ -104,7 +104,7 @@ int main(void) {
         } else {
             printmsg("Failed to initialize ICM42688P, retrying... (%d/%d) \r\n", retry_count + 1, max_retries);
             retry_count++;
-            vTaskDelay(pdMS_TO_TICKS(1000)); // Delay 1 second before retrying
+            HAL_Delay(1000); // Delay 1 second before retrying
         }
     }
 
@@ -115,16 +115,32 @@ int main(void) {
 
 
 //=================================== 3. END ====================================//
+    status = icm42688p_configure_polling(&dev);
+    if (status != ICM42688P_OK) {
+        printmsg("Failed to configure ICM42688P for polling mode \r\n");
+    }
+    else{
+        printmsg("ICM42688P configured for polling mode \r\n");
+    }
+    
     int16_t accel_data[3];
+    int16_t gyro_data[3];
     while(1)
     {
         // Read accelerometer data
         if(icm42688p_read_accel_data(&dev, accel_data) != ICM42688P_OK) {
             printmsg("Failed to read accelerometer data \r\n");
         }
+        if (icm42688p_read_gyro_data(&dev, gyro_data) != ICM42688P_OK)
+        {
+            printmsg("Failed to read gyro data \r\n");
+        }
+        
         else{}
-            HAL_Delay(1000);
+            HAL_Delay(100);
             printmsg("Accel Data: %d, %d, %d \r\n", accel_data[0], accel_data[1], accel_data[2]);
+            printmsg("Gyro Data: %d, %d, %d \r\n", gyro_data[0], gyro_data[1], gyro_data[2]);
+
     }
 
 
