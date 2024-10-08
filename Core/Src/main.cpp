@@ -77,34 +77,6 @@ int main(void) {
 
 //======================== 3. SENSOR INITIALIZATION ========================//
 
-//Test queues
-    // Create a queue capable of containing 10 integers.
-    QueueHandle_t pxQueue = xQueueCreate(10, sizeof(int));
-    
-    // Print the value of pxQueue for debugging
-    printmsg("pxQueue address: %p\n", (void*)pxQueue);
-
-    // Check the queue was created successfully.
-    configASSERT(pxQueue != NULL);
-
-    // Use the queue...
-    int value = 42;
-    if (xQueueSend(pxQueue, &value, portMAX_DELAY) != pdPASS) {
-        // Handle error
-        printmsg("Error: Failed to send to queue\n");
-    }
-
-
-uint8_t status = 0; 
-//SD Init Routine
-if (SD_Init() == SD_OK) {
-    printmsg("SD Card online \r\n");
-} else {
-    printmsg("SD Card offline \r\n");
-}
-
-
-
 //=================================== 3. END ====================================//
 
 //======================== 4. TASK CREATION ============================================================
@@ -244,7 +216,7 @@ static void SDCardTask(void *pvParameters) {
     pwrDirNo = 0;
 
     //Single Write Test
-
+    SD_Init();
     //Open wave Log
     SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
     //Write to wave log
