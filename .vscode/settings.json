@@ -35,6 +35,7 @@
         "CMSIS",
         "driftbuffer",
         "eabi",
+        "FATFS",
         "GPIO",
         "GPIOB",
         "hlpuart",

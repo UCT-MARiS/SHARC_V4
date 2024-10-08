@@ -244,7 +244,7 @@
 
 #define _FS_REENTRANT    1  /* 0:Disable or 1:Enable */
 
-#define _USE_MUTEX       0 /* 0:Disable or 1:Enable */
+#define _USE_MUTEX       1 /* 0:Disable or 1:Enable */
 #define _FS_TIMEOUT      1000 /* Timeout period in unit of time ticks */
 #define _SYNC_t          SemaphoreHandle_t
 /* The option _FS_REENTRANT switches the re-entrancy (thread safe) of the FatFs

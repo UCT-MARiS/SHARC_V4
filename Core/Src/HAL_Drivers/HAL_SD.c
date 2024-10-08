@@ -12,6 +12,7 @@
 #include "main.h"
 //======================== 2. Global Variables =====================================================
 
+extern SD_HandleTypeDef hsd1;
 FATFS SDFatFs; /* File system object for User logical drive */
 FIL File; /* File object */
 DIR Dir; /*Directory Object*/
@@ -323,14 +324,14 @@ sd_status_t SD_Wave_Open(FIL *myFile, DIR *myDir, FILINFO* fno, uint32_t waveDir
 		  }
 
 			  sprintf(diskPath, "WD/WS%d/W%d.txt", waveDirNo, waveLogNo);
-
-			  if(f_open(myFile, (const TCHAR*)diskPath, FA_OPEN_APPEND | FA_WRITE) == FR_OK)
+			  FRESULT status = f_open(myFile, (const TCHAR*)diskPath, FA_OPEN_APPEND | FA_WRITE);
+			  if(status == FR_OK)
 			  {
-				  //printmsg("Opened file! \r\n");
+				  printmsg("Opened file! \r\n");
 			  }
 			  else
 			  {
-				  printmsg("Open failed! \r\n");
+				  printmsg("File not opened, error %d\r\n", status);
 				  return SD_OPEN_ERROR;
 			  }
 	  }

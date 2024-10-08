@@ -42,6 +42,7 @@
 #define QUEUE_SIZE         (uint32_t)10
 #define READ_CPLT_MSG      (uint16_t)1
 #define WRITE_CPLT_MSG     (uint16_t)2
+#define RW_ABORT_MSG       (uint16_t)3  // Added message for abort handling
 
 /*
  * The following Timeout is useful to give the control back to the applications
@@ -128,15 +129,15 @@ const Diskio_drvTypeDef  SD_Driver =
 
 static int SD_CheckStatusWithTimeout(uint32_t timeout)
 {
-  uint32_t timer;
+  uint32_t tickstart = xTaskGetTickCount();
   /* Block until SDIO peripheral is ready again or a timeout occurs */
-  timer = xTaskGetTickCount();
-  while ((xTaskGetTickCount() - timer) < timeout)
+  while ((xTaskGetTickCount() - tickstart) < timeout)
   {
     if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
     {
       return 0;
     }
+    vTaskDelay(1); // Add a small delay to yield CPU
   }
 
   return -1;
@@ -174,6 +175,10 @@ DSTATUS SD_initialize(BYTE lun)
     {
       Stat = SD_CheckStatus(lun);
     }
+    else
+    {
+      return Stat; // Initialization failed
+    }
 #else
     Stat = SD_CheckStatus(lun);
 #endif
@@ -187,13 +192,19 @@ DSTATUS SD_initialize(BYTE lun)
       if (SDQueueID == NULL)
       {
         SDQueueID = xQueueCreate(QUEUE_SIZE, sizeof(uint16_t));
-      }
-
-      if (SDQueueID == NULL)
-      {
-        Stat |= STA_NOINIT;
+        if (SDQueueID == NULL)
+        {
+          Stat |= STA_NOINIT;
+          // Handle queue creation failure
+          return Stat;
+        }
       }
     }
+  }
+  else
+  {
+    // Scheduler not started, cannot proceed
+    return Stat;
   }
 
   return Stat;
@@ -225,7 +236,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 {
   uint8_t ret;
   DRESULT res = RES_ERROR;
-  uint32_t timer;
+  uint32_t tickstart;
   uint16_t event;
 #if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
   uint32_t alignedAddr;
@@ -234,7 +245,13 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
   /* Ensure the SDCard is ready for a new operation */
   if (SD_CheckStatusWithTimeout(SD_TIMEOUT) < 0)
   {
-    return res;
+    return RES_NOTRDY;
+  }
+
+  /* Check if the queue is valid */
+  if (SDQueueID == NULL)
+  {
+    return RES_ERROR;
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
@@ -247,17 +264,16 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
     if (ret == MSD_OK)
     {
       /* Wait for a message from the queue or a timeout */
-      if (xQueueReceive(SDQueueID, &event, SD_TIMEOUT) == pdPASS)
+      if (xQueueReceive(SDQueueID, &event, pdMS_TO_TICKS(SD_TIMEOUT)) == pdPASS)
       {
         if (event == READ_CPLT_MSG)
         {
-          timer = xTaskGetTickCount();
+          tickstart = xTaskGetTickCount();
           /* Block until SDIO IP is ready or a timeout occurs */
-          while ((xTaskGetTickCount() - timer) < SD_TIMEOUT)
+          while ((xTaskGetTickCount() - tickstart) < SD_TIMEOUT)
           {
             if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
             {
-              res = RES_OK;
 #if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
               /*
               The SCB_InvalidateDCache_by_Addr() requires a 32-Byte aligned address,
@@ -266,11 +282,27 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
               alignedAddr = (uint32_t)buff & ~0x1F;
               SCB_InvalidateDCache_by_Addr((uint32_t*)alignedAddr, count * BLOCKSIZE + ((uint32_t)buff - alignedAddr));
 #endif
+              res = RES_OK;
               break;
             }
+            vTaskDelay(1); // Add a small delay to yield CPU
           }
         }
+        else if (event == RW_ABORT_MSG)
+        {
+          res = RES_ERROR;
+        }
       }
+      else
+      {
+        // Timeout occurred waiting for message
+        res = RES_ERROR;
+      }
+    }
+    else
+    {
+      // SD ReadBlocks_DMA failed
+      res = RES_ERROR;
     }
 #if defined(ENABLE_SCRATCH_BUFFER)
   }
@@ -285,33 +317,46 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
       if (ret == MSD_OK)
       {
         /* Wait until the read is successful or a timeout occurs */
-        if (xQueueReceive(SDQueueID, &event, SD_TIMEOUT) == pdPASS)
+        if (xQueueReceive(SDQueueID, &event, pdMS_TO_TICKS(SD_TIMEOUT)) == pdPASS)
         {
           if (event == READ_CPLT_MSG)
           {
-            timer = xTaskGetTickCount();
+            tickstart = xTaskGetTickCount();
             /* Block until SDIO IP is ready or a timeout occurs */
-            while ((xTaskGetTickCount() - timer) < SD_TIMEOUT)
+            while ((xTaskGetTickCount() - tickstart) < SD_TIMEOUT)
             {
               if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
               {
+#if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
+                /*
+                * Invalidate the scratch buffer before the next read to get the actual data instead of the cached one
+                */
+                SCB_InvalidateDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE);
+#endif
+                memcpy(buff, scratch, BLOCKSIZE);
+                buff += BLOCKSIZE;
                 break;
               }
+              vTaskDelay(1); // Add a small delay to yield CPU
             }
           }
+          else if (event == RW_ABORT_MSG)
+          {
+            res = RES_ERROR;
+            break;
+          }
         }
-
-#if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
-        /*
-        * Invalidate the scratch buffer before the next read to get the actual data instead of the cached one
-        */
-        SCB_InvalidateDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE);
-#endif
-        memcpy(buff, scratch, BLOCKSIZE);
-        buff += BLOCKSIZE;
+        else
+        {
+          // Timeout occurred waiting for message
+          res = RES_ERROR;
+          break;
+        }
       }
       else
       {
+        // SD ReadBlocks_DMA failed
+        res = RES_ERROR;
         break;
       }
     }
@@ -339,7 +384,7 @@ DRESULT SD_read(BYTE lun, BYTE *buff, DWORD sector, UINT count)
 DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
 {
   DRESULT res = RES_ERROR;
-  uint32_t timer;
+  uint32_t tickstart;
   uint16_t event;
 #if defined(ENABLE_SCRATCH_BUFFER)
   int32_t ret;
@@ -348,7 +393,13 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
   /* Ensure the SDCard is ready for a new operation */
   if (SD_CheckStatusWithTimeout(SD_TIMEOUT) < 0)
   {
-    return res;
+    return RES_NOTRDY;
+  }
+
+  /* Check if the queue is valid */
+  if (SDQueueID == NULL)
+  {
+    return RES_ERROR;
   }
 
 #if defined(ENABLE_SCRATCH_BUFFER)
@@ -368,35 +419,50 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
     if (BSP_SD_WriteBlocks_DMA((uint32_t*)buff, (uint32_t)(sector), count) == MSD_OK)
     {
       /* Wait for a message from the queue */
-      if (xQueueReceive(SDQueueID, &event, SD_TIMEOUT) == pdPASS)
+      if (xQueueReceive(SDQueueID, &event, pdMS_TO_TICKS(SD_TIMEOUT)) == pdPASS)
       {
         if (event == WRITE_CPLT_MSG)
         {
-          timer = xTaskGetTickCount();
+          tickstart = xTaskGetTickCount();
           /* Block until SDIO IP is ready or a timeout occurs */
-          while ((xTaskGetTickCount() - timer) < SD_TIMEOUT)
+          while ((xTaskGetTickCount() - tickstart) < SD_TIMEOUT)
           {
             if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
             {
               res = RES_OK;
               break;
             }
+            vTaskDelay(1); // Add a small delay to yield CPU
           }
         }
+        else if (event == RW_ABORT_MSG)
+        {
+          res = RES_ERROR;
+        }
       }
+      else
+      {
+        // Timeout occurred waiting for message
+        res = RES_ERROR;
+      }
+    }
+    else
+    {
+      // SD WriteBlocks_DMA failed
+      res = RES_ERROR;
     }
 #if defined(ENABLE_SCRATCH_BUFFER)
   }
   else
   {
-    /* Slow path, fetch each sector separately and memcpy from source buffer */
+    /* Slow path, process each sector separately */
     int i;
 
 #if (ENABLE_SD_DMA_CACHE_MAINTENANCE == 1)
     /*
-     * Invalidate the scratch buffer before the next write to get the actual data instead of the cached one
+     * Clean the scratch buffer before the write operation
      */
-    SCB_InvalidateDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE);
+    SCB_CleanDCache_by_Addr((uint32_t*)scratch, BLOCKSIZE);
 #endif
     for (i = 0; i < count; i++)
     {
@@ -407,24 +473,38 @@ DRESULT SD_write(BYTE lun, const BYTE *buff, DWORD sector, UINT count)
       if (ret == MSD_OK)
       {
         /* Wait until the write is successful or a timeout occurs */
-        if (xQueueReceive(SDQueueID, &event, SD_TIMEOUT) == pdPASS)
+        if (xQueueReceive(SDQueueID, &event, pdMS_TO_TICKS(SD_TIMEOUT)) == pdPASS)
         {
           if (event == WRITE_CPLT_MSG)
           {
-            timer = xTaskGetTickCount();
+            tickstart = xTaskGetTickCount();
             /* Block until SDIO IP is ready or a timeout occurs */
-            while ((xTaskGetTickCount() - timer) < SD_TIMEOUT)
+            while ((xTaskGetTickCount() - tickstart) < SD_TIMEOUT)
             {
               if (BSP_SD_GetCardState() == SD_TRANSFER_OK)
               {
                 break;
               }
+              vTaskDelay(1); // Add a small delay to yield CPU
             }
           }
+          else if (event == RW_ABORT_MSG)
+          {
+            res = RES_ERROR;
+            break;
+          }
+        }
+        else
+        {
+          // Timeout occurred waiting for message
+          res = RES_ERROR;
+          break;
         }
       }
       else
       {
+        // SD WriteBlocks_DMA failed
+        res = RES_ERROR;
         break;
       }
     }
@@ -509,11 +589,16 @@ void BSP_SD_WriteCpltCallback(void)
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
   /*
-   * No need to add an "xTaskGetSchedulerState()" check here, as the SD_initialize()
-   * is always called before any SD_Read()/SD_Write() call
+   * Check if the scheduler is running before using xQueueSendFromISR
    */
-  xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+  {
+    if (SDQueueID != NULL)
+    {
+      xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
+      portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+  }
 }
 
 /**
@@ -526,23 +611,36 @@ void BSP_SD_ReadCpltCallback(void)
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
   /*
-   * No need to add an "xTaskGetSchedulerState()" check here, as the SD_initialize()
-   * is always called before any SD_Read()/SD_Write() call
+   * Check if the scheduler is running before using xQueueSendFromISR
    */
-  xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+  {
+    if (SDQueueID != NULL)
+    {
+      xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
+      portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+  }
 }
 
 /* USER CODE BEGIN ErrorAbortCallbacks */
-/*
 void BSP_SD_AbortCallback(void)
 {
   uint16_t msg = RW_ABORT_MSG;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
-  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+  /*
+   * Check if the scheduler is running before using xQueueSendFromISR
+   */
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+  {
+    if (SDQueueID != NULL)
+    {
+      xQueueSendFromISR(SDQueueID, &msg, &xHigherPriorityTaskWoken);
+      portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
+  }
 }
-*/
 /* USER CODE END ErrorAbortCallbacks */
 
 /* USER CODE BEGIN lastSection */

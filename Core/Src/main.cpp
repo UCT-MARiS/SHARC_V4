@@ -49,6 +49,7 @@ SD_HandleTypeDef hsd1;
 
 //Tasks
 static void LED_task(void *args); 
+static void SDCardTask(void *pvParameters);
 
 //Debugging
 void printmsg(char *format,...);
@@ -75,6 +76,25 @@ int main(void) {
 //=================================== 2. END ====================================//
 
 //======================== 3. SENSOR INITIALIZATION ========================//
+
+//Test queues
+    // Create a queue capable of containing 10 integers.
+    QueueHandle_t pxQueue = xQueueCreate(10, sizeof(int));
+    
+    // Print the value of pxQueue for debugging
+    printmsg("pxQueue address: %p\n", (void*)pxQueue);
+
+    // Check the queue was created successfully.
+    configASSERT(pxQueue != NULL);
+
+    // Use the queue...
+    int value = 42;
+    if (xQueueSend(pxQueue, &value, portMAX_DELAY) != pdPASS) {
+        // Handle error
+        printmsg("Error: Failed to send to queue\n");
+    }
+
+
 uint8_t status = 0; 
 //SD Init Routine
 if (SD_Init() == SD_OK) {
@@ -82,6 +102,7 @@ if (SD_Init() == SD_OK) {
 } else {
     printmsg("SD Card offline \r\n");
 }
+
 
 
 //=================================== 3. END ====================================//
@@ -99,10 +120,28 @@ if (SD_Init() == SD_OK) {
                                   "Blink_LED",
                                   configMINIMAL_STACK_SIZE,
                                   (void*)xDelay,
-                                  configMAX_PRIORITIES - 1U,
+                                  configMAX_PRIORITIES - 2U,
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
+
+    // Create a task to check SD card functions.
+    static StaticTask_t sdCardTaskTCB;
+    static StackType_t sdCardTaskStack[ 8192 ];
+
+    TaskHandle_t sdCardTaskHandle = xTaskCreateStatic(
+        SDCardTask,          // Function that implements the task.
+        "SDCardTask",        // Text name for the task.
+        8192,                 // Stack size in words, not bytes.
+        NULL,                // Parameter passed into the task.
+        configMAX_PRIORITIES - 1U, // Priority at which the task is created.
+        sdCardTaskStack,     // Array to use as the task's stack.
+        &sdCardTaskTCB       // Variable to hold the task's data structure.
+    );
+
+    if (sdCardTaskHandle == NULL) {
+        printmsg("Failed to create SDCardTask\r\n");
+    }
 //======================== 4. END ============================================================
 
 
@@ -185,14 +224,50 @@ static void LED_task(void *pvParameters) {
     }
 }
 
+
+static void SDCardTask(void *pvParameters) {
+
+    printmsg("SD Card Task Started \r\n");
+
+    uint8_t waveBufferSegment[] = "-0.024, 0.038, 9.992, 3.603, 71.756, -8.321, -18.448 \n";
+    uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
+    uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
+    uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
+
+    waveLogNo = 0;
+    waveDirNo = 0;
+    gpsLogNo = 0;
+    gpsDirNo = 0;
+    envLogNo = 0;
+    envDirNo = 0;
+    pwrLogNo = 0;
+    pwrDirNo = 0;
+
+    //Single Write Test
+
+    //Open wave Log
+    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+    //Write to wave log
+    SD_File_Write(&File, waveBufferSegment);
+    //Close Wave Log
+    SD_File_Close(&File);
+
+    // Delete the task after completion
+    printmsg("SD Card Task Completed \r\n");
+    vTaskDelete(NULL);
+
+}
+
+
 /**
  * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.
  * 
  */
 void vApplicationIdleHook(void) {
         // Put the Cortex-M4 into sleep mode
-        __WFI();
+       // __WFI();
     }
+
 
 //======================== 7. END ============================================================
 
