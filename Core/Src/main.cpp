@@ -201,13 +201,13 @@ static void SDCardTask(void *pvParameters) {
 
     printmsg("SD Card Task Started \r\n");
 
-    uint8_t waveBufferSegment[] = "-0.024, 0.038, 9.992, 3.603, 71.756, -8.321, -18.448 \n";
+    uint8_t waveBufferSegment[] = "1, 2, 3, 8192, 5, 6, 7 \n";
     uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
     uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
     uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
 
-    waveLogNo = 0;
-    waveDirNo = 0;
+    waveLogNo = 1;
+    waveDirNo = 1;
     gpsLogNo = 0;
     gpsDirNo = 0;
     envLogNo = 0;
@@ -226,6 +226,50 @@ static void SDCardTask(void *pvParameters) {
 
     // Delete the task after completion
     printmsg("SD Card Task Completed \r\n");
+
+  //Repeated Write Test for directory open functions
+
+  //Open wave Log
+  SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+
+  for(int i= 0; i<1024; i++)
+  {
+	  //Write to wave log
+	  SD_File_Write(&File, waveBufferSegment);
+  }
+
+  //Close Wave Log
+  SD_File_Close(&File);
+
+  printmsg("Write test complete! \r\n");
+  SD_Unmount(SDFatFs);
+
+
+  //Read Test
+
+  int32_t zAcc[1024];
+  float gpsData[160];
+  float envData[160];
+  float pwrData[160];
+
+
+  waveLogNo = 1;
+  waveDirNo = 1;
+  gpsLogNo = 0;
+  gpsDirNo = 0;
+  uint32_t fpointer = 0;
+
+
+  //Wave Read Test
+SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
+SD_File_Close(&File);
+
+  for(int j = 0; j<1024; j++)
+  {
+	 printmsg("Z_acc %d \r\n", zAcc[j]);
+  } 
+
     vTaskDelete(NULL);
 
 }

@@ -54,6 +54,7 @@ typedef enum
 	SD_MOUNT_ERROR,
 	SD_CLOSE_ERROR,
 	SD_OPEN_ERROR,
+	SD_READ_ERROR,
 	SD_WRITE_ERROR,
 	SD_CRC_ERROR,
 	SD_DMA_ERROR,
@@ -200,6 +201,18 @@ sd_status_t SD_Wave_Open(FIL *myFile, DIR *myDir, FILINFO* fno, uint32_t wavDirN
 sd_status_t SD_Wave_Read(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, uint32_t WaveLogNo,  IMU_Data_SD_t inertialDataType, uint32_t *fpointer);
 
 
+/**
+ * @brief Fast read function for wave data
+ * 
+ * @param myFile 
+ * @param IMUArray 
+ * @param WaveDirNo 
+ * @param WaveLogNo 
+ * @param inertialDataType 
+ * @param fpointer 
+ * @return sd_status_t 
+ */
+sd_status_t SD_Wave_Read_Fast(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, uint32_t WaveLogNo,  IMU_Data_SD_t inertialDataType, uint32_t *fpointer);
 
 
 /**
@@ -278,6 +291,15 @@ sd_status_t SD_ENV_Open(FIL *myFile, DIR *myDir, FILINFO* fno, uint32_t ENVDirNo
  * @return
  */
 sd_status_t SD_PWR_Open(FIL *myFile, DIR *myDir, FILINFO* fno, uint32_t PWRDirNo, uint8_t PWRLogNo);
+
+
+/**
+ * @brief Custom atoi function for fast conversion of string to integer
+ * 
+ * @param str 
+ * @return int 
+ */
+int fast_atoi( const char * str );
 
 #ifdef __cplusplus
 }
