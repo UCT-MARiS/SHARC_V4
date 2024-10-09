@@ -21,7 +21,6 @@ extern "C" {
 }
 #endif
 
-
 // Mock class definition
 class MockHAL : public IHAL {
 public:
@@ -32,6 +31,7 @@ public:
     MOCK_METHOD(void, HAL_GPIO_TogglePin, (GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin), (override));
     MOCK_METHOD(HAL_StatusTypeDef, HAL_UART_Transmit, (UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout), (override));
     MOCK_METHOD(void, HAL_Delay, (uint32_t Delay), (override));
+    MOCK_METHOD(void, MX_SDMMC1_SD_Init, (), (override));
 };
 
 // Global pointer to mock instance

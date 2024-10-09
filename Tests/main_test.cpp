@@ -23,6 +23,7 @@ void (*MX_LPUART1_UART_Init_ptr)() = nullptr;
 
 class MainTest : public ::testing::Test {
 protected:
+    
     // Creating an instance of the mock class
     MockHAL mockHal;
     MockHAL* mockHALInstance = &mockHal;
