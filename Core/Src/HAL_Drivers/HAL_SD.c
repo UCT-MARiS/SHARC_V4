@@ -327,7 +327,7 @@ sd_status_t SD_Wave_Open(FIL *myFile, DIR *myDir, FILINFO* fno, uint32_t waveDir
 			  FRESULT status = f_open(myFile, (const TCHAR*)diskPath, FA_OPEN_APPEND | FA_WRITE);
 			  if(status == FR_OK)
 			  {
-				  printmsg("Opened file! \r\n");
+				  //printmsg("Opened file! \r\n");
 			  }
 			  else
 			  {
@@ -580,7 +580,112 @@ sd_status_t SD_Wave_Read(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, ui
 		  }
 
 	  return SD_OK;
+}
 
+// Optimized SD_Wave_Read function
+sd_status_t SD_Wave_Read_Fast(FIL *myFile, int32_t *IMUArray, uint32_t WaveDirNo, uint32_t WaveLogNo, IMU_Data_SD_t inertialDataType, uint32_t *fpointer) 
+{
+    // Buffer size adjusted to read larger blocks
+    uint8_t dataBuf[4096];  // Adjust size based on available RAM
+    UINT bytesRead;
+    char diskPath[32];      // Increased size for safety
+    FSIZE_t fp = *fpointer;
+    UINT i = 0, dataIndex = 0;
+	FRESULT res;
+
+	// Construct the file path
+    sprintf(diskPath, "WD/WS%lu/W%lu.txt", WaveDirNo, WaveLogNo);
+
+	 // Mount the SD card only if not already mounted
+    if (SD_Mount(SDFatFs, diskPath) != SD_OK) {
+        printmsg("Mount failed\r\n");
+        return SD_MOUNT_ERROR;
+    }
+
+	// Open the file if it's not already open
+    if (f_open(myFile, (const TCHAR *)diskPath, FA_READ) != FR_OK) {
+        printmsg("Open failed!\r\n");
+        return SD_OPEN_ERROR;
+    }
+
+    // Seek to the current file pointer position
+    f_lseek(myFile, fp);
+
+    // Read a large block of data
+	res = f_read(myFile, dataBuf, sizeof(dataBuf), &bytesRead);
+    if (res != FR_OK) {
+        printmsg("Read failed!\r\n");
+        f_close(myFile);
+        return SD_READ_ERROR;
+    }
+
+ 	while (dataIndex < 1024) {
+        // Read a large block of data
+        if (f_read(myFile, dataBuf, sizeof(dataBuf), &bytesRead) != FR_OK || bytesRead == 0) {
+            printmsg("Read failed or EOF reached!\r\n");
+            break;  // Exit the loop if read fails or EOF is reached
+        }
+
+        UINT i = 0;
+        // Parsing the buffer
+        while (i < bytesRead && dataIndex < 1024) {
+            // Find the end of the current line
+            UINT lineStart = i;
+            while (i < bytesRead && dataBuf[i] != '\n' && dataBuf[i] != '\r') {
+                i++;
+            }
+
+            // Null-terminate the line
+            uint8_t temp = dataBuf[i];  // Save the original character
+            dataBuf[i] = '\0';
+
+            // Parse the required field from the line
+            char *ptr = (char *)&dataBuf[lineStart];
+            int currentField = 0;
+            char *fieldStart = ptr;
+
+            while (*ptr != '\0') {
+                if (*ptr == ',' || *ptr == ' ' || *ptr == '\t') {
+                    // End of a field
+                    *ptr = '\0';  // Null-terminate the field
+
+                    if (currentField == inertialDataType) {
+                        // Parse the value using the fast_atoi function
+                        int value = fast_atoi(fieldStart);
+                        IMUArray[dataIndex++] = value;
+                        break;  // Move to the next line
+                    }
+
+                    currentField++;
+                    ptr++;  // Move past the delimiter
+                    // Skip any additional delimiters
+                    while (*ptr == ',' || *ptr == ' ' || *ptr == '\t') ptr++;
+                    fieldStart = ptr;
+                } else {
+                    ptr++;
+                }
+            }
+
+            // Check if the required field is the last one in the line
+            if (*ptr == '\0' && currentField == inertialDataType) {
+                int value = fast_atoi(fieldStart);
+                IMUArray[dataIndex++] = value;
+            }
+
+            // Restore the original character
+            dataBuf[i] = temp;
+            // Move to the start of the next line (skip newline characters)
+            while (i < bytesRead && (dataBuf[i] == '\n' || dataBuf[i] == '\r')) {
+                i++;
+            }
+        }
+
+        // Update the file pointer
+        *fpointer = f_tell(myFile);
+    }
+
+
+    return SD_OK;
 }
 
 sd_status_t SD_GPS_Read(FIL *myFile, float *GPSArray,  uint32_t GPSDirNo, uint32_t GPSLogNo, uint32_t *fpointer)
@@ -781,3 +886,22 @@ sd_status_t SD_PWR_Read(FIL *myFile, float *PWRArray,  uint32_t PWRDirNo, uint32
 
 }
 
+/**
+ * @brief Custom fast atoi function for converting strings to integers
+ * 
+ * @param str 
+ * @return int 
+ */
+int fast_atoi(const char *str) {
+    int result = 0;
+    int sign = 1;
+    if (*str == '-') {
+        sign = -1;
+        str++;
+    }
+    while (*str >= '0' && *str <= '9') {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    return sign * result;
+}
