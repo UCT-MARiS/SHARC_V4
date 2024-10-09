@@ -17,7 +17,15 @@
         "task.h": "c",
         "fast_math_functions.h": "c",
         "cmath": "cpp",
-        "wave_functions.h": "c"
+        "wave_functions.h": "c",
+        "init.h": "c",
+        "ff.h": "c",
+        "semphr.h": "c",
+        "freertos.h": "c",
+        "diskio.h": "c",
+        "string.h": "c",
+        "sd_diskio.h": "c",
+        "ff_gen_drv.h": "c"
     },
 
     "editor.fontSize": 16,
@@ -27,6 +35,7 @@
         "CMSIS",
         "driftbuffer",
         "eabi",
+        "FATFS",
         "GPIO",
         "GPIOB",
         "hlpuart",

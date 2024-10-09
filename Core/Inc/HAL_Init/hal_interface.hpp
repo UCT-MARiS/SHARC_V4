@@ -25,6 +25,8 @@ public:
     virtual void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin) = 0;
     virtual HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout) = 0;
     virtual void HAL_Delay(uint32_t Delay) = 0;
+    virtual void MX_SDMMC1_SD_Init() = 0;
+
 };
 #endif // __cplusplus
 
