@@ -42,7 +42,8 @@ extern "C" {
 //======================== 0. Peripheral Handles ============================================================
 UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
-SD_HandleTypeDef hsd1;RTC_HandleTypeDef hrtc;
+SD_HandleTypeDef hsd1;
+RTC_HandleTypeDef hrtc;
 
 //======================== 0. END ============================================================================
 
@@ -51,6 +52,7 @@ SD_HandleTypeDef hsd1;RTC_HandleTypeDef hrtc;
 //Tasks
 static void LED_task(void *args); 
 static void SDCardTask(void *pvParameters);
+static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 
 //Debugging
 void printmsg(char *format,...);
@@ -77,6 +79,25 @@ int main(void) {
 //=================================== 2. END ====================================//
 
 //======================== 3. SENSOR INITIALIZATION ========================//
+
+    //Set RTC time and print out value
+    RTC_TimeTypeDef sTime = {0};
+    RTC_DateTypeDef sDate = {0};
+
+    sTime.Hours = 0x0;
+    sTime.Minutes = 0x0;
+    sTime.Seconds = 0x0;
+    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+
+    sDate.WeekDay = RTC_WEEKDAY_FRIDAY;
+    sDate.Month = RTC_MONTH_OCTOBER;
+    sDate.Date = 0xA; 
+    sDate.Year = 0xA; // 10/10/2024
+
+    updateRTC(&hrtc, &sTime, &sDate);
+    printmsg("RTC Time: %02d:%02d:%02d \r\n", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    printmsg("RTC Date: %02d/%02d/%02d \r\n", sDate.Date, sDate.Month, sDate.Year);
 
 //=================================== 3. END ====================================//
 
@@ -165,6 +186,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 1 */
 
   /* USER CODE END Callback 1 */
+}
+
+/**
+ * @brief Function to update the RTC time and date
+ * 
+ * @param hrtc 
+ * @param sTime 
+ * @param sDate 
+ */
+void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate)
+{
+    HAL_RTC_SetTime(hrtc, sTime, RTC_FORMAT_BIN);
+    HAL_RTC_SetDate(hrtc, sDate, RTC_FORMAT_BIN);
 }
 
 //======================== 6. WRAPPER FUNCTIONS ==============================================
