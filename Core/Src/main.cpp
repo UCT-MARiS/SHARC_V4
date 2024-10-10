@@ -1,6 +1,21 @@
+/**
+ * @file main.cpp
+ * @author Michael Noyce 
+ * @brief 
+ * @version 4.0
+ * @date 2024-10-10
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "main.hpp"
+// HAL Includes
 #include "hal_interface.hpp"
 #include "hal_impl.hpp"
+// RTOS Includes
+#include "rtos_interface.hpp"
+#include "rtos_impl.hpp"
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wformat"
@@ -44,6 +59,9 @@ UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
 SD_HandleTypeDef hsd1;
 RTC_HandleTypeDef hrtc;
+
+// Instantiate the concrete implementation
+FreeRTOS_Impl rtosImpl;
 
 //======================== 0. END ============================================================================
 
