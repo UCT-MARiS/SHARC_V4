@@ -28,6 +28,14 @@ void MX_GPIO_Init(void);
  */
 void MX_LPUART1_UART_Init(void);
 
+
+/**
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
+void MX_RTC_Init(void);
+
 #ifdef __cplusplus
 }
 #endif

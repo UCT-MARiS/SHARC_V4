@@ -27,3 +27,7 @@ HAL_StatusTypeDef HAL_Impl::HAL_UART_Transmit(UART_HandleTypeDef* huart, const u
 void HAL_Impl::HAL_Delay(uint32_t Delay) {
     ::HAL_Delay(Delay);
 }
+
+void HAL_Impl::MX_RTC_Init() {
+    ::MX_RTC_Init();
+}
