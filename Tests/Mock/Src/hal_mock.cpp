@@ -62,3 +62,19 @@ void HAL_Delay_Mock(uint32_t Delay) {
         printf("HAL_Delay called with delay: %u\n", Delay);
     } 
 }
+
+void MX_SDMMC1_SD_Init_Mock() {
+    if (mockHALInstance) {
+        mockHALInstance->MX_SDMMC1_SD_Init();
+    } else {
+        printf("MX_SDMMC1_SD_Init called\n");
+    }
+}
+
+void MX_RTC_Init_Mock() {
+    if (mockHALInstance) {
+        mockHALInstance->MX_RTC_Init();
+    } else {
+        printf("MX_RTC_Init called\n");
+    }
+}

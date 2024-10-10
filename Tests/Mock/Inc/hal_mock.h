@@ -32,6 +32,7 @@ public:
     MOCK_METHOD(HAL_StatusTypeDef, HAL_UART_Transmit, (UART_HandleTypeDef* huart, const uint8_t* pData, uint16_t Size, uint32_t Timeout), (override));
     MOCK_METHOD(void, HAL_Delay, (uint32_t Delay), (override));
     MOCK_METHOD(void, MX_SDMMC1_SD_Init, (), (override));
+    MOCK_METHOD(void, MX_RTC_Init, (), (override));
 };
 
 // Global pointer to mock instance
