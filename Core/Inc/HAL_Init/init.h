@@ -35,6 +35,14 @@ void MX_LPUART1_UART_Init(void);
 void MX_SDMMC1_SD_Init(void);
 
 
+
+/**
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
+void MX_RTC_Init(void);
+
 #ifdef __cplusplus
 }
 #endif
