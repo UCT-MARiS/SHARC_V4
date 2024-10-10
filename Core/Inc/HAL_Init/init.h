@@ -28,6 +28,13 @@ void MX_GPIO_Init(void);
  */
 void MX_LPUART1_UART_Init(void);
 
+/**
+ * @brief SDMMC1 Initialization Function
+ * 
+ */
+void MX_SDMMC1_SD_Init(void);
+
+
 
 /**
  * @brief RTC Initialization Function

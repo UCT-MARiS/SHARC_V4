@@ -90,6 +90,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
 		${CMAKE_SOURCE_DIR}/Core/Inc
 		${CMAKE_SOURCE_DIR}/Core/Inc/HAL_Init
 		${CMAKE_SOURCE_DIR}/Core/Inc/RTOS_Init
+		${CMAKE_SOURCE_DIR}/Core/Inc/HAL_Drivers
 	)
 
 	set(MODULE_INCLUDE_DIRECTORIES
@@ -107,6 +108,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
 		${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/*.c
 		${CMAKE_SOURCE_DIR}/Core/Src/HAL_Init/*.cpp
 		${CMAKE_SOURCE_DIR}/Core/Src/RTOS_Init/*.c
+		${CMAKE_SOURCE_DIR}/Core/Src/HAL_Drivers/*.c #closely coupled programs that make use of the hal
 	)
 
 	list(FILTER APPLICATION_SOURCES EXCLUDE REGEX "main.c$")
@@ -138,6 +140,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
 		PUBLIC SHARC::DSPFastMath
 		PUBLIC SHARC::DSPWindow
 		PUBLIC SHARC::WaveProc
+		PUBLIC SHARC::FATFS
 	)
 
 
