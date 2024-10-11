@@ -6,11 +6,7 @@
 #include <cstring>
 #include <string>
 #include "u-blox_m9n_Library.h"
-#include "hal_interface.hpp"
-#include "hal_impl.hpp"
-#include "main.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#include "uart_interface.hpp"
 
 using namespace std;
 
