@@ -49,8 +49,9 @@ SD_HandleTypeDef hsd1;
 RTC_HandleTypeDef hrtc;
 
 //GNSS Handles
-UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
+UART_HandleTypeDef huart4;
+DMA_HandleTypeDef hdma_uart4_rx;
+DMA_HandleTypeDef hdma_uart4_tx;
 SFE_UBLOX_GNSS myGNSS;
 
 //======================== 0. END ============================================================================
@@ -228,7 +229,7 @@ void begin_UART_DMA(UART_HandleTypeDef *huart)
 {
     // Start the UART receive DMA
     HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart,(uint8_t*)&myGNSS.receivedBytes, sizeof(myGNSS.receivedBytes));
-    __HAL_DMA_DISABLE_IT(&hdma_usart2_rx, DMA_IT_HT); // Disable half-transfer interrupt
+    __HAL_DMA_DISABLE_IT(&hdma_uart4_rx, DMA_IT_HT); // Disable half-transfer interrupt
     if (status != HAL_OK)
     {
         printmsg("DMA Error: %d \r\n", status);
@@ -246,7 +247,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 
         // Restart the DMA transfer
         HAL_UARTEx_ReceiveToIdle_DMA(huart,(uint8_t*)&myGNSS.receivedBytes, sizeof(myGNSS.receivedBytes));
-        __HAL_DMA_DISABLE_IT(&hdma_usart2_rx, DMA_IT_HT); // Disable half-transfer interrupt
+        __HAL_DMA_DISABLE_IT(&hdma_uart4_rx, DMA_IT_HT); // Disable half-transfer interrupt
     }
 }
 
@@ -284,7 +285,7 @@ void GPS_task(void *pvParameters){
     uint32_t dataIndex = 0;
     TickType_t xLastWakeTime;
 
-    if (myGNSS.begin(&huart2) == true){
+    if (myGNSS.begin(&huart4) == true){
         printmsg("GNSS serial connected \r\n");
     }
     else {
