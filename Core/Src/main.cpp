@@ -2,6 +2,9 @@
 #include "hal_interface.hpp"
 #include "hal_impl.hpp"
 
+//GNSS Includes
+#include "u-blox_m9n_Library.h"
+
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 #pragma GCC diagnostic ignored "-Wformat"
 
@@ -45,15 +48,19 @@ HAL_Impl halImpl;
 SD_HandleTypeDef hsd1;
 RTC_HandleTypeDef hrtc;
 
+//GNSS Handles
+UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
+SFE_UBLOX_GNSS myGNSS;
+
 //======================== 0. END ============================================================================
 
 //======================== 1. Function Prototypes ============================================================
 
 //Tasks
 static void LED_task(void *args); 
-static void SDCardTask(void *pvParameters);
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
-
+void GPS_task(void *pvParameters);
 //Debugging
 void printmsg(char *format,...);
 
@@ -99,6 +106,13 @@ int main(void) {
     printmsg("RTC Time: %02d:%02d:%02d \r\n", sTime.Hours, sTime.Minutes, sTime.Seconds);
     printmsg("RTC Date: %02d/%02d/%02d \r\n", sDate.Date, sDate.Month, sDate.Year);
 
+
+    // GNSS Initialization
+    #define DELAY_1000_MS (1000 / portTICK_PERIOD_MS)
+    #define DELAY_200_MS (200 / portTICK_PERIOD_MS)
+    #define DELAY_10_MS (10 / portTICK_PERIOD_MS)
+    uint32_t microseconds;
+
 //=================================== 3. END ====================================//
 
 //======================== 4. TASK CREATION ============================================================
@@ -110,32 +124,41 @@ int main(void) {
     // Create the blink task
     const TickType_t xDelay = 500 / portTICK_PERIOD_MS;  // 500 ms delay
 
-    TaskHandle_t returnStatus = xTaskCreateStatic( LED_task,
+    TaskHandle_t returnStatus_LED = xTaskCreateStatic( LED_task,
                                   "Blink_LED",
                                   configMINIMAL_STACK_SIZE,
                                   (void*)xDelay,
-                                  configMAX_PRIORITIES - 2U,
+                                  configMAX_PRIORITIES-4U,
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
+    // Create a GPS task
+    TaskHandle_t GPS_task_handle;
+    BaseType_t returnStatus_GPS = xTaskCreate( GPS_task,
+                                  "GPS_Task",
+                                  ((uint16_t)256),
+                                  NULL,
+                                  configMAX_PRIORITIES-1U,
+                                  &(GPS_task_handle) ); 
 
-    // Create a task to check SD card functions.
-    static StaticTask_t sdCardTaskTCB;
-    static StackType_t sdCardTaskStack[ 8192 ];
-
-    TaskHandle_t sdCardTaskHandle = xTaskCreateStatic(
-        SDCardTask,          // Function that implements the task.
-        "SDCardTask",        // Text name for the task.
-        8192,                 // Stack size in words, not bytes.
-        NULL,                // Parameter passed into the task.
-        configMAX_PRIORITIES - 1U, // Priority at which the task is created.
-        sdCardTaskStack,     // Array to use as the task's stack.
-        &sdCardTaskTCB       // Variable to hold the task's data structure.
-    );
-
-    if (sdCardTaskHandle == NULL) {
-        printmsg("Failed to create SDCardTask\r\n");
+    // Check if the tasks were created successfully
+    if (returnStatus_LED == NULL) {
+    // Task creation failed
+        printmsg("LED Task Creation Failed\r\n");
     }
+    else {
+        printmsg("LED Task Created Successfully\r\n");
+    }
+
+    if (returnStatus_GPS != pdPASS) {
+        printmsg("GPS Task Creation Failed \r\n");
+    }
+    else{
+        printmsg("GPS Task Created Successfully \r\n");
+    } 
+
+    
+    
 //======================== 4. END ============================================================
 
 
@@ -201,6 +224,32 @@ void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef 
     HAL_RTC_SetDate(hrtc, sDate, RTC_FORMAT_BIN);
 }
 
+void begin_UART_DMA(UART_HandleTypeDef *huart)
+{
+    // Start the UART receive DMA
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart,(uint8_t*)&myGNSS.receivedBytes, sizeof(myGNSS.receivedBytes));
+    __HAL_DMA_DISABLE_IT(&hdma_usart2_rx, DMA_IT_HT); // Disable half-transfer interrupt
+    if (status != HAL_OK)
+    {
+        printmsg("DMA Error: %d \r\n", status);
+    }
+}
+
+// UART receive event callback
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+    if (huart->Instance == myGNSS._serialPort->Instance)
+    {
+        // Read the received byte and store it in the circular buffer
+        myGNSS.circular_buffer_write(&myGNSS.RX_Buffer, myGNSS.receivedBytes, Size);
+        // Set the flag to indicate data has been received
+        myGNSS.dataReceived = true;
+
+        // Restart the DMA transfer
+        HAL_UARTEx_ReceiveToIdle_DMA(huart,(uint8_t*)&myGNSS.receivedBytes, sizeof(myGNSS.receivedBytes));
+        __HAL_DMA_DISABLE_IT(&hdma_usart2_rx, DMA_IT_HT); // Disable half-transfer interrupt
+    }
+}
+
 //======================== 6. WRAPPER FUNCTIONS ==============================================
 
 //======================== 6. END ============================================================
@@ -231,84 +280,143 @@ static void LED_task(void *pvParameters) {
     }
 }
 
+void GPS_task(void *pvParameters){
+    uint32_t dataIndex = 0;
+    TickType_t xLastWakeTime;
 
-static void SDCardTask(void *pvParameters) {
+    if (myGNSS.begin(&huart2) == true){
+        printmsg("GNSS serial connected \r\n");
+    }
+    else {
+        printmsg("Unable to connect \r\n"); 
+        vTaskSuspend(NULL);
+    }
 
-    printmsg("SD Card Task Started \r\n");
+// Configure the GNSS receiver
+{
+    myGNSS.setUART1Output(COM_TYPE_UBX); //Set the UART port to output UBX only
 
-    uint8_t waveBufferSegment[] = "1, 2, 3, 8192, 5, 6, 7 \n";
-    uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
+    while(!myGNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS)){}
+    printmsg("GPS Enabled \r\n");
 
-    waveLogNo = 1;
-    waveDirNo = 1;
-    gpsLogNo = 0;
-    gpsDirNo = 0;
-    envLogNo = 0;
-    envDirNo = 0;
-    pwrLogNo = 0;
-    pwrDirNo = 0;
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_SBAS)){}
+    printmsg("SBAS Disabled \r\n");
 
-    //Single Write Test
-    SD_Init();
-    //Open wave Log
-    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-    //Write to wave log
-    SD_File_Write(&File, waveBufferSegment);
-    //Close Wave Log
-    SD_File_Close(&File);
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS)){}
+    printmsg("GLONASS Disabled \r\n");
 
-    // Delete the task after completion
-    printmsg("SD Card Task Completed \r\n");
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GALILEO)){}
+    printmsg("Galileo Disabled \r\n");
+    
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_BEIDOU)){}
+    printmsg("Beidou Disabled \r\n");
 
-  //Repeated Write Test for directory open functions
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_IMES)){}
+    printmsg("IMES Disabled \r\n");
 
-  //Open wave Log
-  SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_QZSS)){}
+    printmsg("QZSS Disabled \r\n");
 
-  for(int i= 0; i<1024; i++)
-  {
-	  //Write to wave log
-	  SD_File_Write(&File, waveBufferSegment);
-  }
+    myGNSS.saveConfiguration(); //Save the current settings to flash and BBR;
 
-  //Close Wave Log
-  SD_File_Close(&File);
+    #define DELAY_5_S (5000 / portTICK_PERIOD_MS)
+    vTaskDelay(DELAY_5_S);
 
-  printmsg("Write test complete! \r\n");
-  SD_Unmount(SDFatFs);
+    if (myGNSS.getDiffSoln()){
+        printmsg("Differential Corrections Applied \r\n");
+    }
+    else{
+        printmsg("No Differential Corrections Applied \r\n");
+    }
 
+    uint16_t VDOP = myGNSS.getVerticalDOP(); // Vertical Dilution of Precision (Scaled by 100)
+    uint16_t NumSat = myGNSS.getSIV(); // Number of Sattelites Used in Fix
+    uint16_t fixType = myGNSS.getFixType(); // Get the current fix type
 
-  //Read Test
+    printmsg("VDOP: %.3f \r\n", VDOP/100.0f);
+    printmsg("Number of Satellites: %d \r\n", NumSat);
+    switch (fixType) {
+    case 0:
+        printmsg("Fix Type: No Fix (0)\r\n");
+        break;
+    case 1:
+        printmsg("Fix Type: Dead Reckoning only (1)\r\n");
+        break;
+    case 2:
+        printmsg("Fix Type: 2D-Fix (2)\r\n");
+        break;
+    case 3:
+        printmsg("Fix Type: 3D-Fix (3)\r\n");
+        break;
+    case 4:
+        printmsg("Fix Type: GNSS + Dead Reckoning combined (4)\r\n");
+        break;
+    case 5:
+        printmsg("Fix Type: Time only fix (5)\r\n");
+        break;
+    default:
+        printmsg("Fix Type: Unknown (%d)\r\n", fixType);
+        break;
+    }
 
-  int32_t zAcc[1024];
-  float gpsData[160];
-  float envData[160];
-  float pwrData[160];
+    myGNSS.setNavigationFrequency(1); // Set the navigation rate to 5 Hz
 
+    printmsg("Navigation Frequency: 1 Hz \r\n");
 
-  waveLogNo = 1;
-  waveDirNo = 1;
-  gpsLogNo = 0;
-  gpsDirNo = 0;
-  uint32_t fpointer = 0;
-
-
-  //Wave Read Test
-SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
-SD_File_Close(&File);
-
-  for(int j = 0; j<1024; j++)
-  {
-	 printmsg("Z_acc %d \r\n", zAcc[j]);
-  } 
-
-    vTaskDelete(NULL);
-
+    printmsg("Antenna Type: Patch Antenna \r\n");
 }
+    /*
+    * The xLastWakeTime variable needs to be initialized with the current tick
+    * count. Note that this is the only time the variable is explicitly
+    * written to. After this xLastWakeTime is managed automatically by the
+    * vTaskDelayUntil() API function.
+    */
+    xLastWakeTime = xTaskGetTickCount();
 
+    for (;;){
+        //vTaskDelay(DELAY_1000_MS);
+        vTaskDelayUntil(&xLastWakeTime, DELAY_1000_MS);
+        float32_t nedDownVel = myGNSS.getNedDownVel(); //Returns the NED Down in mm/s
+        nedDownVel = nedDownVel/1000;
+        printmsg("%d,%f\r\n",dataIndex, nedDownVel);
+        dataIndex++;
+
+        if (dataIndex == 281){
+
+            uint16_t VDOP = myGNSS.getVerticalDOP(); // Vertical Dilution of Precision (Scaled by 100)
+            uint16_t NumSat = myGNSS.getSIV(); // Number of Sattelites Used in Fix
+            uint16_t fixType = myGNSS.getFixType(); // Get the current fix type
+
+            printmsg("VDOP: %.3f \r\n", VDOP/100.0f);
+            printmsg("Number of Satellites: %d \r\n", NumSat);
+            switch (fixType) {
+            case 0:
+                printmsg("Fix Type: No Fix (0)\r\n");
+                break;
+            case 1:
+                printmsg("Fix Type: Dead Reckoning only (1)\r\n");
+                break;
+            case 2:
+                printmsg("Fix Type: 2D-Fix (2)\r\n");
+                break;
+            case 3:
+                printmsg("Fix Type: 3D-Fix (3)\r\n");
+                break;
+            case 4:
+                printmsg("Fix Type: GNSS + Dead Reckoning combined (4)\r\n");
+                break;
+            case 5:
+                printmsg("Fix Type: Time only fix (5)\r\n");
+                break;
+            default:
+                printmsg("Fix Type: Unknown (%d)\r\n", fixType);
+                break;
+            }
+
+            vTaskEndScheduler();
+        }
+    }
+}
 
 /**
  * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.

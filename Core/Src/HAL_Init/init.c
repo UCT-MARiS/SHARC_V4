@@ -3,11 +3,15 @@
 extern UART_HandleTypeDef hlpuart1;
 extern SD_HandleTypeDef hsd1;
 extern RTC_HandleTypeDef hrtc;
+extern UART_HandleTypeDef huart2;
+extern DMA_HandleTypeDef hdma_usart2_rx;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
 void MX_LPUART1_UART_Init(void);
+void MX_USART2_UART_Init(void);
+void MX_DMA_Init(void);
 
 
 /**
@@ -238,6 +242,70 @@ void MX_RTC_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMAMUX1_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+ 
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 38400;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetTxFifoThreshold(&huart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_SetRxFifoThreshold(&huart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_UARTEx_DisableFifoMode(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* USER CODE BEGIN USART2_Init 2 */
+  __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+  /* USER CODE END USART2_Init 2 */
+
+}
 
 
 /**
