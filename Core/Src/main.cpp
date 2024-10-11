@@ -34,6 +34,8 @@ extern "C" {
 #include "fatfs.h"
 #include "HAL_SD.h" //SD Card Interface - closely coupled to HAL
 
+//IMU Includes
+#include "HAL_ICM20649.h"
 
 #ifdef __cplusplus 
 }
@@ -44,6 +46,9 @@ UART_HandleTypeDef hlpuart1;
 HAL_Impl halImpl;
 SD_HandleTypeDef hsd1;
 RTC_HandleTypeDef hrtc;
+I2C_HandleTypeDef hi2c1;
+DMA_HandleTypeDef hdma_i2c1_rx;
+DMA_HandleTypeDef hdma_i2c1_tx;
 
 //======================== 0. END ============================================================================
 
@@ -51,7 +56,7 @@ RTC_HandleTypeDef hrtc;
 
 //Tasks
 static void LED_task(void *args); 
-static void SDCardTask(void *pvParameters);
+static void IMULogTask(void *pvParameters);
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 
 //Debugging
@@ -120,20 +125,20 @@ int main(void) {
 
 
     // Create a task to check SD card functions.
-    static StaticTask_t sdCardTaskTCB;
-    static StackType_t sdCardTaskStack[ 8192 ];
+    static StaticTask_t IMULogTaskTCB;
+    static StackType_t IMULogTaskStack[ 8192 ];
 
-    TaskHandle_t sdCardTaskHandle = xTaskCreateStatic(
-        SDCardTask,          // Function that implements the task.
-        "SDCardTask",        // Text name for the task.
+    TaskHandle_t IMULogTaskHandle = xTaskCreateStatic(
+        IMULogTask,          // Function that implements the task.
+        "IMULogTask",        // Text name for the task.
         8192,                 // Stack size in words, not bytes.
         NULL,                // Parameter passed into the task.
         configMAX_PRIORITIES - 1U, // Priority at which the task is created.
-        sdCardTaskStack,     // Array to use as the task's stack.
-        &sdCardTaskTCB       // Variable to hold the task's data structure.
+        IMULogTaskStack,     // Array to use as the task's stack.
+        &IMULogTaskTCB       // Variable to hold the task's data structure.
     );
 
-    if (sdCardTaskHandle == NULL) {
+    if (IMULogTaskHandle == NULL) {
         printmsg("Failed to create SDCardTask\r\n");
     }
 //======================== 4. END ============================================================
@@ -232,80 +237,92 @@ static void LED_task(void *pvParameters) {
 }
 
 
-static void SDCardTask(void *pvParameters) {
+static void IMULogTask(void *pvParameters) {
 
-    printmsg("SD Card Task Started \r\n");
+    printmsg("IMU Task Started \r\n");
 
-    uint8_t waveBufferSegment[] = "1, 2, 3, 8192, 5, 6, 7 \n";
-    uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
 
-    waveLogNo = 1;
-    waveDirNo = 1;
-    gpsLogNo = 0;
-    gpsDirNo = 0;
-    envLogNo = 0;
-    envDirNo = 0;
-    pwrLogNo = 0;
-    pwrDirNo = 0;
+    RTC_TimeTypeDef sTime;
+    RTC_DateTypeDef sDate;
 
-    //Single Write Test
+    //Temporary variables related to IMU sampling
+	int32_t accelTemp[3];
+	int32_t gyroTemp[3];
+	uint8_t tempFIFOBuf[500];
+	uint8_t imu[12] = { 0 };
+	uint8_t data_status;
+    
+
+	int IMU_On = 1;
+
+    waveDirNo = 0;
+    waveLogNo = 0;
+
+    uint32_t imu_sample_count = 0;
+
     SD_Init();
-    //Open wave Log
-    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-    //Write to wave log
-    SD_File_Write(&File, waveBufferSegment);
-    //Close Wave Log
-    SD_File_Close(&File);
 
-    // Delete the task after completion
-    printmsg("SD Card Task Completed \r\n");
+	SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
 
-  //Repeated Write Test for directory open functions
+	if ((ICM20649_Init_IMU(GYRO_CONFIG_FSSEL_500DPS, ACC_CONFIG_AFSSEL_4G,
+	ACCEL_DPLFCFG_1, GYRO_DPLFCFG_0) == IMU_OK)) {
 
-  //Open wave Log
-  SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+		while (IMU_On) {
 
-  for(int i= 0; i<1024; i++)
-  {
-	  //Write to wave log
-	  SD_File_Write(&File, waveBufferSegment);
-  }
+			if (imu_sample_count == WAVELOGBUFNO)
+					{
+				SD_File_Close(&File); //NB Remember to close file
+				waveLogNo++;
+				imu_sample_count = 0;
+				SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+				printmsg("New Wave log! \r\n");
+			}
 
-  //Close Wave Log
-  SD_File_Close(&File);
+			ICM20649_Is_Data_Ready(&hi2c1, &data_status);
 
-  printmsg("Write test complete! \r\n");
-  SD_Unmount(SDFatFs);
+			if (data_status) {
 
+				ICM20649_Get_IMU_RawData(&hi2c1, imu);
 
-  //Read Test
+				HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 
-  int32_t zAcc[1024];
-  float gpsData[160];
-  float envData[160];
-  float pwrData[160];
+				HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //unlocks time stamp
 
+				accelTemp[0] = ((int16_t) (imu[0] << 8) | imu[1]);
+				accelTemp[1] = ((int16_t) (imu[2] << 8) | imu[3]);
+				accelTemp[2] = ((int16_t) (imu[4] << 8) | imu[5]);
+				gyroTemp[0] = ((int16_t) (imu[6] << 8) | imu[7]);
+				gyroTemp[1] = ((int16_t) (imu[8] << 8) | imu[9]);
+				gyroTemp[2] = ((int16_t) (imu[10] << 8) | imu[11]);
 
-  waveLogNo = 1;
-  waveDirNo = 1;
-  gpsLogNo = 0;
-  gpsDirNo = 0;
-  uint32_t fpointer = 0;
+				//printmsg("Ax      Ay      Az      Gx      Gy      Gz \r\n");
+				//printmsg("%d  %d  %d  %d  %d  %d \r\n", accelTemp[0], accelTemp[1], accelTemp[2], gyroTemp[0], gyroTemp[1],gyroTemp[2]);
 
+                sprintf((char*) tempFIFOBuf,
+                        "%02d/%02d/%02d %02d:%02d:%02d, %ld, %ld, %ld, %ld, %ld, %ld \r\n",
+                        sDate.Date, sDate.Month, sDate.Year, sTime.Hours, sTime.Minutes, sTime.Seconds,
+                        accelTemp[0], accelTemp[1], accelTemp[2], gyroTemp[0], gyroTemp[1], gyroTemp[2]);
+				SD_File_Write(&File, tempFIFOBuf);
 
-  //Wave Read Test
-SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
-SD_File_Close(&File);
+				imu_sample_count++;
 
-  for(int j = 0; j<1024; j++)
-  {
-	 printmsg("Z_acc %d \r\n", zAcc[j]);
-  } 
+			}
 
-    vTaskDelete(NULL);
+			if (waveLogNo == WAVELOGNO + 1) {
+				SD_File_Close(&File); //NB Remember to close file
+				waveDirNo++;
+				waveLogNo = 0;
+			}
+
+            if(waveDirNo == 1000)
+		    {
+			  SD_File_Close(&File);
+			  break;
+		    }
+
+		}
+
+	}
 
 }
 
