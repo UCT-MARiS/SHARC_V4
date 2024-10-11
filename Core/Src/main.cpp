@@ -284,7 +284,7 @@ static void LED_task(void *pvParameters) {
 void GPS_task(void *pvParameters){
     uint32_t dataIndex = 0;
     TickType_t xLastWakeTime;
-
+    myGNSS.enableDebugging(&hlpuart1);
     if (myGNSS.begin(&huart4) == true){
         printmsg("GNSS serial connected \r\n");
     }

@@ -19,6 +19,8 @@ public:
     void HAL_Delay(uint32_t Delay) override;
     void MX_SDMMC1_SD_Init() override;
     void MX_RTC_Init() override;
+    void MX_UART4_Init() override;
+    void MX_DMA_Init() override;
 };
 
 #endif // HAL_IMPL_HPP

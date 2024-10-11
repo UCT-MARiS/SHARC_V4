@@ -49,11 +49,11 @@ void MX_RTC_Init(void);
 void MX_DMA_Init(void);
 
 /**
- * @brief USART2 Initialization Function
+ * @brief UART4 Initialization Function
  * @param None
  * @retval None
  */
-void MX_USART4_UART_Init(void);
+void MX_UART4_Init(void);
 
 #ifdef __cplusplus
 }

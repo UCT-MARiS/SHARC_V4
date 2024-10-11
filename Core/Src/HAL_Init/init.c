@@ -11,7 +11,7 @@ extern UART_HandleTypeDef huart4;
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
 void MX_LPUART1_UART_Init(void);
-void MX_USART2_UART_Init(void);
+void MX_UART4_Init(void);
 void MX_DMA_Init(void);
 
 
@@ -253,8 +253,11 @@ void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Channel1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
@@ -264,17 +267,17 @@ void MX_DMA_Init(void)
   * @param None
   * @retval None
   */
-void MX_USART4_UART_Init(void)
+void MX_UART4_Init(void)
 {
 
-  /* USER CODE BEGIN USART2_Init 0 */
+  /* USER CODE BEGIN UART4_Init 0 */
 
-  /* USER CODE END USART2_Init 0 */
+  /* USER CODE END UART4_Init 0 */
 
-  /* USER CODE BEGIN USART2_Init 1 */
- 
-  /* USER CODE END USART2_Init 1 */
-  huart4.Instance = USART2;
+  /* USER CODE BEGIN UART4_Init 1 */
+
+  /* USER CODE END UART4_Init 1 */
+  huart4.Instance = UART4;
   huart4.Init.BaudRate = 38400;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
@@ -301,10 +304,9 @@ void MX_USART4_UART_Init(void)
   {
     Error_Handler();
   }
+  /* USER CODE BEGIN UART4_Init 2 */
 
-  /* USER CODE BEGIN USART2_Init 2 */
-  __HAL_UART_ENABLE_IT(&huart4, UART_IT_RXNE);
-  /* USER CODE END USART2_Init 2 */
+  /* USER CODE END UART4_Init 2 */
 
 }
 

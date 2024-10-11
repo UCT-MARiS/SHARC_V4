@@ -27,6 +27,8 @@ public:
     virtual void HAL_Delay(uint32_t Delay) = 0;
     virtual void MX_SDMMC1_SD_Init() = 0;
     virtual void MX_RTC_Init() = 0;
+    virtual void MX_UART4_Init() = 0;
+    virtual void MX_DMA_Init() = 0;
 };
 #endif // __cplusplus
 

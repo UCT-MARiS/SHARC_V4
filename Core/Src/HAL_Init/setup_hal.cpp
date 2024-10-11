@@ -19,4 +19,6 @@ void setupHAL(IHAL* hal) {
     hal->MX_LPUART1_UART_Init();
     hal->MX_SDMMC1_SD_Init(); 
     hal->MX_RTC_Init();
+    hal->MX_DMA_Init();
+    hal->MX_UART4_Init();
 }
