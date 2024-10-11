@@ -9,10 +9,11 @@ extern DMA_HandleTypeDef hdma_uart4_tx;
 extern UART_HandleTypeDef huart4;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_DMA_Init(void);
 void MX_GPIO_Init(void);
 void MX_LPUART1_UART_Init(void);
 void MX_UART4_Init(void);
-void MX_DMA_Init(void);
+
 
 
 /**
@@ -257,13 +258,13 @@ void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 
 /**
-  * @brief USART3 Initialization Function
+  * @brief USART4 Initialization Function
   * @param None
   * @retval None
   */
