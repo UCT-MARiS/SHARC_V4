@@ -16,6 +16,13 @@
 
 using namespace std;
 
+//Data Defines
+#define N_SAMPLES 1
+#define SAMPLE_SIZE 12 //12 bytes per sample ax ay az gx gy gz
+#define IMU_BUFFER_SIZE N_SAMPLES*SAMPLE_SIZE
+#define WAVELOGBUFNO 281 //Number of local buffers written to each wavelog file
+#define WAVELOGNO 4 //Number of wave logs
+
 // Global Status Returns
 typedef enum
 {

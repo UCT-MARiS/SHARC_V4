@@ -61,6 +61,7 @@ SFE_UBLOX_GNSS myGNSS;
 //Tasks
 static void LED_task(void *args); 
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
+static void GNSSLogTask(void *pvParameters);
 void GPS_task(void *pvParameters);
 //Debugging
 void printmsg(char *format,...);
@@ -83,6 +84,9 @@ int main(void) {
     __enable_irq(); // Enable global interrupts
     // Message to indicate that the system has started
     printmsg("SHARC BUOY STARTING! \r\n");
+
+    begin_UART_DMA(&huart4); // Start the UART DMA
+    myGNSS.circular_buffer_init(&myGNSS.RX_Buffer);
 
 //=================================== 2. END ====================================//
 
@@ -114,6 +118,8 @@ int main(void) {
     #define DELAY_10_MS (10 / portTICK_PERIOD_MS)
     uint32_t microseconds;
 
+
+
 //=================================== 3. END ====================================//
 
 //======================== 4. TASK CREATION ============================================================
@@ -133,15 +139,6 @@ int main(void) {
                                   &( exampleTaskStack[ 0 ] ),
                                   &( exampleTaskTCB ) );
 
-    // Create a GPS task
-    TaskHandle_t GPS_task_handle;
-    BaseType_t returnStatus_GPS = xTaskCreate( GPS_task,
-                                  "GPS_Task",
-                                  ((uint16_t)256),
-                                  NULL,
-                                  configMAX_PRIORITIES-1U,
-                                  &(GPS_task_handle) ); 
-
     // Check if the tasks were created successfully
     if (returnStatus_LED == NULL) {
     // Task creation failed
@@ -151,15 +148,41 @@ int main(void) {
         printmsg("LED Task Created Successfully\r\n");
     }
 
+/*     // Create a GPS task
+    TaskHandle_t GPS_task_handle;
+    BaseType_t returnStatus_GPS = xTaskCreate( GPS_task,
+                                  "GPS_Task",
+                                  ((uint16_t)256),
+                                  NULL,
+                                  configMAX_PRIORITIES-1U,
+                                  &(GPS_task_handle) ); 
+
+
     if (returnStatus_GPS != pdPASS) {
         printmsg("GPS Task Creation Failed \r\n");
     }
     else{
         printmsg("GPS Task Created Successfully \r\n");
-    } 
+    }  */
 
-    
-    
+       // Create a task to check SD card functions.
+    static StaticTask_t GNSSLogTaskTCB;
+    static StackType_t GNSSLogTaskStack[ 8192 ];
+
+    TaskHandle_t GNSSLogTaskHandle = xTaskCreateStatic(
+        GNSSLogTask,          // Function that implements the task.
+        "GNSSLogTask",        // Text name for the task.
+        8192,                 // Stack size in words, not bytes.
+        NULL,                // Parameter passed into the task.
+        configMAX_PRIORITIES - 1U, // Priority at which the task is created.
+        GNSSLogTaskStack,     // Array to use as the task's stack.
+        &GNSSLogTaskTCB       // Variable to hold the task's data structure.
+    );
+
+    if (GNSSLogTaskHandle == NULL) {
+        printmsg("Failed to create SDCardTask\r\n");
+    }
+
 //======================== 4. END ============================================================
 
 
@@ -281,10 +304,122 @@ static void LED_task(void *pvParameters) {
     }
 }
 
+static void GNSSLogTask(void *pvParameters) {
+
+    printmsg("GNSS Task Started \r\n");
+
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000);
+
+    RTC_TimeTypeDef sTime;
+    RTC_DateTypeDef sDate;
+
+    //Temporary variables related to IMU sampling
+	int32_t velTemp[3];
+	int16_t vDOPTemp;
+    uint8_t svTemp;
+	uint8_t tempFIFOBuf[500];
+	uint8_t gnss[12] = { 0 };
+	uint8_t data_status;
+    
+	int GNSS_On = 1;
+
+    waveDirNo = 0;
+    waveLogNo = 0;
+
+    uint32_t gnss_sample_count = 0;
+
+    SD_Init();
+
+	SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+    //myGNSS.enableDebugging(&hlpuart1);
+	if (myGNSS.begin(&huart4) == true) {
+        printmsg("GNSS serial connected \r\n");
+
+        while(myGNSS.getFixType() == 0)// Wait for GNSS fix
+        {
+            vTaskDelay(DELAY_1000_MS);
+        }
+
+        xLastWakeTime = xTaskGetTickCount();
+
+		while (GNSS_On) {
+			if (gnss_sample_count == WAVELOGBUFNO)
+			{
+				SD_File_Close(&File); //NB Remember to close file
+				waveLogNo++;
+				gnss_sample_count = 0;
+				SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+				printmsg("New Wave log! \r\n");
+			}
+
+            vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+            //HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+			//HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //unlocks time stamp
+            HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+            HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //unlocks time stamp
+            
+/*             velTemp[0] = myGNSS.getNedNorthVel();
+            #velTemp[1] = myGNSS.getNedEastVel();
+            velTemp[2] = myGNSS.getNedDownVel();
+
+            vDOPTemp = myGNSS.getVerticalDOP();
+
+            svTemp = myGNSS.getSIV();
+
+            printmsg("vN      vE      vD      vDOP      SIV \r\n");
+            printmsg("%d    %d      %d      %d      %d \r\n", velTemp[0], velTemp[1], velTemp[2], vDOPTemp, svTemp);
+
+            sprintf((char*) tempFIFOBuf,
+            "%02d/%02d/%02d %02d:%02d:%02d, %ld, %ld, %ld, %ld %ld \r\n",
+            sDate.Date, sDate.Month, sDate.Year, sTime.Hours, sTime.Minutes, sTime.Seconds,
+            velTemp[0], velTemp[1], velTemp[2], vDOPTemp, svTemp);
+            SD_File_Write(&File, tempFIFOBuf); */
+
+            velTemp[0] = myGNSS.getNedDownVel();
+
+            //vDOPTemp = myGNSS.getVerticalDOP();
+
+            //svTemp = myGNSS.getSIV();
+
+            printmsg("%d \r\n", velTemp[0]);
+
+            sprintf((char*) tempFIFOBuf,
+            "%02d/%02d/%02d %02d:%02d:%02d, %ld \r\n",
+            sDate.Date, sDate.Month, sDate.Year, sTime.Hours, sTime.Minutes, sTime.Seconds,
+            velTemp[0]);
+            SD_File_Write(&File, tempFIFOBuf);
+
+            gnss_sample_count++;
+
+            if (waveLogNo == WAVELOGNO + 1) {
+				SD_File_Close(&File); //NB Remember to close file
+				waveDirNo++;
+				waveLogNo = 0;
+			}
+
+            if(waveDirNo == 1000)
+		    {
+			  SD_File_Close(&File);
+              printmsg("Donezo! \r\n");
+			  break;
+		    }
+		}
+
+	}
+        else {
+        printmsg("Unable to connect \r\n");
+    }
+}
+
 void GPS_task(void *pvParameters){
     uint32_t dataIndex = 0;
     TickType_t xLastWakeTime;
-    myGNSS.enableDebugging(&hlpuart1);
+    RTC_TimeTypeDef sTime;
+    //myGNSS.enableDebugging(&hlpuart1);
     if (myGNSS.begin(&huart4) == true){
         printmsg("GNSS serial connected \r\n");
     }
@@ -360,9 +495,9 @@ void GPS_task(void *pvParameters){
         break;
     }
 
-    myGNSS.setNavigationFrequency(1); // Set the navigation rate to 5 Hz
+    myGNSS.setNavigationFrequency(2); // Set the navigation rate to 5 Hz
 
-    printmsg("Navigation Frequency: 1 Hz \r\n");
+    printmsg("Navigation Frequency: 2 Hz \r\n");
 
     printmsg("Antenna Type: Patch Antenna \r\n");
 }
@@ -376,10 +511,11 @@ void GPS_task(void *pvParameters){
 
     for (;;){
         //vTaskDelay(DELAY_1000_MS);
-        vTaskDelayUntil(&xLastWakeTime, DELAY_1000_MS);
+         vTaskDelayUntil(&xLastWakeTime, DELAY_1000_MS);
+        HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         float32_t nedDownVel = myGNSS.getNedDownVel(); //Returns the NED Down in mm/s
         nedDownVel = nedDownVel/1000;
-        printmsg("%d,%f\r\n",dataIndex, nedDownVel);
+        printmsg("%d,%f\r\n",sTime.Seconds, nedDownVel);
         dataIndex++;
 
         if (dataIndex == 281){
