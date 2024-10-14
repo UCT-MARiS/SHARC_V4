@@ -33,7 +33,7 @@ extern "C" {
 // Define constants for lpf_decimate function
     //LPF Decimate Defintions
 #define SNR_THRESHOLD_F32    75.0f
-#define BLOCK_SIZE            32
+#define BLOCK_SIZE            50
     /* Must be a multiple of 16 */
 #define NUM_TAPS_ARRAY_SIZE              32
 #define NUM_TAPS              32
@@ -41,6 +41,7 @@ extern "C" {
 
 /**
  * @brief Decimate the input signal using an FIR filter.
+ * @note The filter only decimates if the block size is a multiple of the decimation factor.
  * @param testInput
  * @param testOutput
  */

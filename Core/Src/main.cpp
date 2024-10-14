@@ -240,7 +240,7 @@ static void WaveProcTask(void *pvParameters) {
 
   //Read Test
 
-  int32_t zAcc[1024];
+  float32_t zAcc[1024];
 
 
   waveLogNo = 1;
@@ -252,35 +252,39 @@ static void WaveProcTask(void *pvParameters) {
 uint32_t rawDataSize = 102400;
 uint32_t decimation_number = 25;
 uint32_t fileSize = 30000;
-
+uint32_t fileReadSize = 0;
 float32_t accumulatedResult[4096] = {0}; // Array to accumulate results
 int resultIndex = 0;
 
-for(int i = 0; i < 100; i++) {
+for(int i = 0; i < 128; i++) {
 
-    if (i*1024 > fileSize) {
+    fileReadSize += 1024;
+
+    if (fileReadSize >= 28000) {
         waveLogNo++;
+        fileReadSize = 0;
     }
-    
+
     SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
     SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
     SD_File_Close(&File);
 
-    // Convert to float
-    float32_t zAccFloat[1024];
-    arm_q31_to_float(zAcc, zAccFloat, 1024);
-
     // LPF Decimate Test
-    float32_t decimatedResult[41]; // 1024 / 25 = 40.96, rounded up to 41
-    lpf_decimate(zAccFloat, decimatedResult);
+    float32_t decimatedResult[32]; // 1024 / 25 = 40.96, rounded up to 41
+    lpf_decimate(zAcc, decimatedResult);
 
     // Accumulate the result
-    for (int j = 0; j < 41 && resultIndex < 4096; j++, resultIndex++) {
+    for (int j = 0; j < 32 && resultIndex < 4096; j++, resultIndex++) {
         accumulatedResult[resultIndex] = decimatedResult[j];
     }
 
-    printmsg("Wave Log: %d, Wave Dir: %d, Z-Acc: %d \r\n", waveLogNo, waveDirNo, zAcc[0]);
+    //printmsg("Wave Log: %d, Wave Dir: %d, Z-Acc: %.2f, Decimated_Result: %.2f \r\n", waveLogNo, waveDirNo, zAcc[0], decimatedResult[3]);
 }
+
+// Print out the accumulated result array
+//for (int i = 0; i < 4096; i++) {
+//    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
+//}
 
 vTaskDelete(NULL);
 
