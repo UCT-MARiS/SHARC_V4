@@ -62,7 +62,6 @@ SFE_UBLOX_GNSS myGNSS;
 static void LED_task(void *args); 
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 static void GNSSLogTask(void *pvParameters);
-void GPS_task(void *pvParameters);
 //Debugging
 void printmsg(char *format,...);
 
@@ -102,10 +101,10 @@ int main(void) {
     sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     sTime.StoreOperation = RTC_STOREOPERATION_RESET;
 
-    sDate.WeekDay = RTC_WEEKDAY_FRIDAY;
+    sDate.WeekDay = RTC_WEEKDAY_SUNDAY;
     sDate.Month = RTC_MONTH_OCTOBER;
-    sDate.Date = 0xA; 
-    sDate.Year = 0xA; // 10/10/2024
+    sDate.Date = 0x0; 
+    sDate.Year = 0x0;
 
     updateRTC(&hrtc, &sTime, &sDate);
     printmsg("RTC Time: %02d:%02d:%02d \r\n", sTime.Hours, sTime.Minutes, sTime.Seconds);
@@ -116,9 +115,6 @@ int main(void) {
     #define DELAY_1000_MS (1000 / portTICK_PERIOD_MS)
     #define DELAY_200_MS (200 / portTICK_PERIOD_MS)
     #define DELAY_10_MS (10 / portTICK_PERIOD_MS)
-    uint32_t microseconds;
-
-
 
 //=================================== 3. END ====================================//
 
@@ -148,24 +144,7 @@ int main(void) {
         printmsg("LED Task Created Successfully\r\n");
     }
 
-/*     // Create a GPS task
-    TaskHandle_t GPS_task_handle;
-    BaseType_t returnStatus_GPS = xTaskCreate( GPS_task,
-                                  "GPS_Task",
-                                  ((uint16_t)256),
-                                  NULL,
-                                  configMAX_PRIORITIES-1U,
-                                  &(GPS_task_handle) ); 
-
-
-    if (returnStatus_GPS != pdPASS) {
-        printmsg("GPS Task Creation Failed \r\n");
-    }
-    else{
-        printmsg("GPS Task Created Successfully \r\n");
-    }  */
-
-       // Create a task to check SD card functions.
+    // Create a task to log vertical velocity from the GNSS.
     static StaticTask_t GNSSLogTaskTCB;
     static StackType_t GNSSLogTaskStack[ 8192 ];
 
@@ -315,12 +294,8 @@ static void GNSSLogTask(void *pvParameters) {
     RTC_DateTypeDef sDate;
 
     //Temporary variables related to IMU sampling
-	int32_t velTemp[3];
-	int16_t vDOPTemp;
-    uint8_t svTemp;
+	int32_t velTemp[3]; // Optionally, all NED coordinates can be stored here
 	uint8_t tempFIFOBuf[500];
-	uint8_t gnss[12] = { 0 };
-	uint8_t data_status;
     
 	int GNSS_On = 1;
 
@@ -355,35 +330,11 @@ static void GNSSLogTask(void *pvParameters) {
 
             vTaskDelayUntil(&xLastWakeTime, xFrequency);
 
-            //HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-
-			//HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //unlocks time stamp
             HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 
             HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //unlocks time stamp
-            
-/*             velTemp[0] = myGNSS.getNedNorthVel();
-            #velTemp[1] = myGNSS.getNedEastVel();
-            velTemp[2] = myGNSS.getNedDownVel();
 
-            vDOPTemp = myGNSS.getVerticalDOP();
-
-            svTemp = myGNSS.getSIV();
-
-            printmsg("vN      vE      vD      vDOP      SIV \r\n");
-            printmsg("%d    %d      %d      %d      %d \r\n", velTemp[0], velTemp[1], velTemp[2], vDOPTemp, svTemp);
-
-            sprintf((char*) tempFIFOBuf,
-            "%02d/%02d/%02d %02d:%02d:%02d, %ld, %ld, %ld, %ld %ld \r\n",
-            sDate.Date, sDate.Month, sDate.Year, sTime.Hours, sTime.Minutes, sTime.Seconds,
-            velTemp[0], velTemp[1], velTemp[2], vDOPTemp, svTemp);
-            SD_File_Write(&File, tempFIFOBuf); */
-
-            velTemp[0] = myGNSS.getNedDownVel();
-
-            //vDOPTemp = myGNSS.getVerticalDOP();
-
-            //svTemp = myGNSS.getSIV();
+            velTemp[0] = myGNSS.getNedDownVel(); //Only vertical velocity stored
 
             printmsg("%d \r\n", velTemp[0]);
 
@@ -404,7 +355,7 @@ static void GNSSLogTask(void *pvParameters) {
             if(waveDirNo == 1000)
 		    {
 			  SD_File_Close(&File);
-              printmsg("Donezo! \r\n");
+              printmsg("1000 directories reached! \r\n");
 			  break;
 		    }
 		}
@@ -412,146 +363,6 @@ static void GNSSLogTask(void *pvParameters) {
 	}
         else {
         printmsg("Unable to connect \r\n");
-    }
-}
-
-void GPS_task(void *pvParameters){
-    uint32_t dataIndex = 0;
-    TickType_t xLastWakeTime;
-    RTC_TimeTypeDef sTime;
-    //myGNSS.enableDebugging(&hlpuart1);
-    if (myGNSS.begin(&huart4) == true){
-        printmsg("GNSS serial connected \r\n");
-    }
-    else {
-        printmsg("Unable to connect \r\n"); 
-        vTaskSuspend(NULL);
-    }
-
-// Configure the GNSS receiver
-{
-    myGNSS.setUART1Output(COM_TYPE_UBX); //Set the UART port to output UBX only
-
-    while(!myGNSS.enableGNSS(true, SFE_UBLOX_GNSS_ID_GPS)){}
-    printmsg("GPS Enabled \r\n");
-
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_SBAS)){}
-    printmsg("SBAS Disabled \r\n");
-
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GLONASS)){}
-    printmsg("GLONASS Disabled \r\n");
-
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_GALILEO)){}
-    printmsg("Galileo Disabled \r\n");
-    
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_BEIDOU)){}
-    printmsg("Beidou Disabled \r\n");
-
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_IMES)){}
-    printmsg("IMES Disabled \r\n");
-
-    while(!myGNSS.enableGNSS(false, SFE_UBLOX_GNSS_ID_QZSS)){}
-    printmsg("QZSS Disabled \r\n");
-
-    myGNSS.saveConfiguration(); //Save the current settings to flash and BBR;
-
-    #define DELAY_5_S (5000 / portTICK_PERIOD_MS)
-    vTaskDelay(DELAY_5_S);
-
-    if (myGNSS.getDiffSoln()){
-        printmsg("Differential Corrections Applied \r\n");
-    }
-    else{
-        printmsg("No Differential Corrections Applied \r\n");
-    }
-
-    uint16_t VDOP = myGNSS.getVerticalDOP(); // Vertical Dilution of Precision (Scaled by 100)
-    uint16_t NumSat = myGNSS.getSIV(); // Number of Sattelites Used in Fix
-    uint16_t fixType = myGNSS.getFixType(); // Get the current fix type
-
-    printmsg("VDOP: %.3f \r\n", VDOP/100.0f);
-    printmsg("Number of Satellites: %d \r\n", NumSat);
-    switch (fixType) {
-    case 0:
-        printmsg("Fix Type: No Fix (0)\r\n");
-        break;
-    case 1:
-        printmsg("Fix Type: Dead Reckoning only (1)\r\n");
-        break;
-    case 2:
-        printmsg("Fix Type: 2D-Fix (2)\r\n");
-        break;
-    case 3:
-        printmsg("Fix Type: 3D-Fix (3)\r\n");
-        break;
-    case 4:
-        printmsg("Fix Type: GNSS + Dead Reckoning combined (4)\r\n");
-        break;
-    case 5:
-        printmsg("Fix Type: Time only fix (5)\r\n");
-        break;
-    default:
-        printmsg("Fix Type: Unknown (%d)\r\n", fixType);
-        break;
-    }
-
-    myGNSS.setNavigationFrequency(2); // Set the navigation rate to 5 Hz
-
-    printmsg("Navigation Frequency: 2 Hz \r\n");
-
-    printmsg("Antenna Type: Patch Antenna \r\n");
-}
-    /*
-    * The xLastWakeTime variable needs to be initialized with the current tick
-    * count. Note that this is the only time the variable is explicitly
-    * written to. After this xLastWakeTime is managed automatically by the
-    * vTaskDelayUntil() API function.
-    */
-    xLastWakeTime = xTaskGetTickCount();
-
-    for (;;){
-        //vTaskDelay(DELAY_1000_MS);
-         vTaskDelayUntil(&xLastWakeTime, DELAY_1000_MS);
-        HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-        float32_t nedDownVel = myGNSS.getNedDownVel(); //Returns the NED Down in mm/s
-        nedDownVel = nedDownVel/1000;
-        printmsg("%d,%f\r\n",sTime.Seconds, nedDownVel);
-        dataIndex++;
-
-        if (dataIndex == 281){
-
-            uint16_t VDOP = myGNSS.getVerticalDOP(); // Vertical Dilution of Precision (Scaled by 100)
-            uint16_t NumSat = myGNSS.getSIV(); // Number of Sattelites Used in Fix
-            uint16_t fixType = myGNSS.getFixType(); // Get the current fix type
-
-            printmsg("VDOP: %.3f \r\n", VDOP/100.0f);
-            printmsg("Number of Satellites: %d \r\n", NumSat);
-            switch (fixType) {
-            case 0:
-                printmsg("Fix Type: No Fix (0)\r\n");
-                break;
-            case 1:
-                printmsg("Fix Type: Dead Reckoning only (1)\r\n");
-                break;
-            case 2:
-                printmsg("Fix Type: 2D-Fix (2)\r\n");
-                break;
-            case 3:
-                printmsg("Fix Type: 3D-Fix (3)\r\n");
-                break;
-            case 4:
-                printmsg("Fix Type: GNSS + Dead Reckoning combined (4)\r\n");
-                break;
-            case 5:
-                printmsg("Fix Type: Time only fix (5)\r\n");
-                break;
-            default:
-                printmsg("Fix Type: Unknown (%d)\r\n", fixType);
-                break;
-            }
-
-            vTaskEndScheduler();
-        }
     }
 }
 
@@ -582,5 +393,3 @@ void vApplicationIdleHook(void) {
 #endif /* #if ( configCHECK_FOR_STACK_OVERFLOW > 0 ) */
 
 //======================== 8. END ============================================================
-
-
