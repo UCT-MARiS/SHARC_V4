@@ -236,6 +236,8 @@ static void WaveProcTask(void *pvParameters) {
 
     printmsg("SD Card Task Started \r\n");
 
+    SD_Init();
+
   //Read Test
 
   int32_t zAcc[1024];
