@@ -24,9 +24,29 @@ extern "C" {
 #define WINDOW_SIZE FFT_SIZE  // Window size equals FFT size
 #define OVERLAP 0.5f    // 50% overlap between segments
 
+//Define constants for the integrate_psd_cmsis_static function
+#define INPUT_SIGNAL_SIZE 4096  // Size of the input signal
+
 // Define constants for compute_spectral_moments
 #define SAMPLING_FREQUENCY 4        // Sampling frequency
- 
+
+// Define constants for lpf_decimate function
+    //LPF Decimate Defintions
+#define SNR_THRESHOLD_F32    75.0f
+#define BLOCK_SIZE            32
+    /* Must be a multiple of 16 */
+#define NUM_TAPS_ARRAY_SIZE              32
+#define NUM_TAPS              32
+#define DECIMATION_CONSTANT 25
+
+/**
+ * @brief Decimate the input signal using an FIR filter.
+ * @param testInput
+ * @param testOutput
+ */
+void lpf_decimate(float32_t* testInput, float32_t* testOutput);
+
+
 /**
  * @brief Function to calculate Welch's Power Spectral Density (PSD) estimate.
  * 
@@ -55,8 +75,20 @@ void compute_spectral_moments(float32_t *psd, uint32_t N, float32_t *moments);
  */
 void calculate_wave_parameters(float32_t *moments, float32_t *wave_params);
 
+
+/**
+ * @brief Integrate acceleration PSD to obtain displacement PSD using CMSIS DSP functions with static arrays.
+ *
+ * @param[in]  pSaa     Pointer to the input acceleration PSD array.
+ * @param[in]  pFreqs   Pointer to the frequency array corresponding to the PSD.
+ * @param[out] pSxx     Pointer to the output displacement PSD array.
+ * @param[in]  length   Length of the input/output arrays (must be <= MAX_LENGTH).
+ */
+void integrate_psd_cmsis_static(const float32_t *pSaa, const float32_t *pFreqs, float32_t *pSxx, uint32_t length);
+
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif // PWELCH_H
+#endif // WAVE_FUNCTIONS_H

@@ -51,7 +51,7 @@ RTC_HandleTypeDef hrtc;
 
 //Tasks
 static void LED_task(void *args); 
-static void SDCardTask(void *pvParameters);
+static void WaveProcTask(void *pvParameters);
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 
 //Debugging
@@ -120,20 +120,20 @@ int main(void) {
 
 
     // Create a task to check SD card functions.
-    static StaticTask_t sdCardTaskTCB;
-    static StackType_t sdCardTaskStack[ 8192 ];
+    static StaticTask_t waveProcTaskTCB;
+    static StackType_t waveProcTaskStack[ 16384 ];
 
-    TaskHandle_t sdCardTaskHandle = xTaskCreateStatic(
-        SDCardTask,          // Function that implements the task.
-        "SDCardTask",        // Text name for the task.
-        8192,                 // Stack size in words, not bytes.
+    TaskHandle_t WaveProcTaskHandle = xTaskCreateStatic(
+        WaveProcTask,          // Function that implements the task.
+        "WaveProcTask",        // Text name for the task.
+        16384,                 // Stack size in words, not bytes.
         NULL,                // Parameter passed into the task.
         configMAX_PRIORITIES - 1U, // Priority at which the task is created.
-        sdCardTaskStack,     // Array to use as the task's stack.
-        &sdCardTaskTCB       // Variable to hold the task's data structure.
+        waveProcTaskStack,     // Array to use as the task's stack.
+        &waveProcTaskTCB       // Variable to hold the task's data structure.
     );
 
-    if (sdCardTaskHandle == NULL) {
+    if (WaveProcTaskHandle == NULL) {
         printmsg("Failed to create SDCardTask\r\n");
     }
 //======================== 4. END ============================================================
@@ -232,83 +232,55 @@ static void LED_task(void *pvParameters) {
 }
 
 
-static void SDCardTask(void *pvParameters) {
+static void WaveProcTask(void *pvParameters) {
 
     printmsg("SD Card Task Started \r\n");
-
-    uint8_t waveBufferSegment[] = "1, 2, 3, 8192, 5, 6, 7 \n";
-    uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-
-    waveLogNo = 1;
-    waveDirNo = 1;
-    gpsLogNo = 0;
-    gpsDirNo = 0;
-    envLogNo = 0;
-    envDirNo = 0;
-    pwrLogNo = 0;
-    pwrDirNo = 0;
-
-    //Single Write Test
-    SD_Init();
-    //Open wave Log
-    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-    //Write to wave log
-    SD_File_Write(&File, waveBufferSegment);
-    //Close Wave Log
-    SD_File_Close(&File);
-
-    // Delete the task after completion
-    printmsg("SD Card Task Completed \r\n");
-
-  //Repeated Write Test for directory open functions
-
-  //Open wave Log
-  SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-
-  for(int i= 0; i<1024; i++)
-  {
-	  //Write to wave log
-	  SD_File_Write(&File, waveBufferSegment);
-  }
-
-  //Close Wave Log
-  SD_File_Close(&File);
-
-  printmsg("Write test complete! \r\n");
-  SD_Unmount(SDFatFs);
-
 
   //Read Test
 
   int32_t zAcc[1024];
-  float gpsData[160];
-  float envData[160];
-  float pwrData[160];
 
 
   waveLogNo = 1;
-  waveDirNo = 1;
-  gpsLogNo = 0;
-  gpsDirNo = 0;
+  waveDirNo = 68;
   uint32_t fpointer = 0;
 
 
-  //Wave Read Test
-SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
-SD_File_Close(&File);
+//Wave Read Test
+uint32_t rawDataSize = 102400;
+uint32_t decimation_number = 25;
+uint32_t fileSize = 30000;
 
-  for(int j = 0; j<1024; j++)
-  {
-	 printmsg("Z_acc %d \r\n", zAcc[j]);
-  } 
+float32_t accumulatedResult[4096] = {0}; // Array to accumulate results
+int resultIndex = 0;
 
-    vTaskDelete(NULL);
+for(int i = 0; i < 100; i++) {
 
+    if (i*1024 > fileSize) {
+        waveLogNo++;
+    }
+    
+    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+    SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
+    SD_File_Close(&File);
+
+    // Convert to float
+    float32_t zAccFloat[1024];
+    arm_q31_to_float(zAcc, zAccFloat, 1024);
+
+    // LPF Decimate Test
+    float32_t decimatedResult[41]; // 1024 / 25 = 40.96, rounded up to 41
+    lpf_decimate(zAccFloat, decimatedResult);
+
+    // Accumulate the result
+    for (int j = 0; j < 41 && resultIndex < 4096; j++, resultIndex++) {
+        accumulatedResult[resultIndex] = decimatedResult[j];
+    }
 }
 
+vTaskDelete(NULL);
+
+}
 
 /**
  * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.

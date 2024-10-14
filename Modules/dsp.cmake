@@ -8,6 +8,7 @@ add_library(DSPBasicMath STATIC
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_add_f32.c
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_mult_f32.c
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_scale_f32.c
+    ${DSP_LIBS_DIR}/SupportFunctions/arm_q31_to_float.c
     ${DSP_LIBS_DIR}/SupportFunctions/arm_copy_f32.c
     ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_f32.c
     ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_squared_f32.c
@@ -16,6 +17,8 @@ add_library(DSPBasicMath STATIC
 add_library(DSPFiltering STATIC
     ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_f32.c
     ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_init_f32.c
+    ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_decimate_init_f32.c
+    ${DSP_LIBS_DIR}/FilteringFunctions/arm_fir_decimate_f32.c
     # Add other filtering source files as needed
 )
 
