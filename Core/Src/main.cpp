@@ -276,6 +276,8 @@ for(int i = 0; i < 100; i++) {
     for (int j = 0; j < 41 && resultIndex < 4096; j++, resultIndex++) {
         accumulatedResult[resultIndex] = decimatedResult[j];
     }
+
+    printmsg("Wave Log: %d, Wave Dir: %d, Z-Acc: %d \r\n", waveLogNo, waveDirNo, zAcc[0]);
 }
 
 vTaskDelete(NULL);
