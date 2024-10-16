@@ -19,8 +19,8 @@
 
 
 //LPF Filter variables
-//  Assume 100 Hz input signal 4 Hz output signal
-//  fc = 2 Hz, fs = 100 Hz, M = 25
+//  Assume 100 Hz input signal 3.125 Hz output signal
+//  fc = 1.5 Hz, fs = 100 Hz, M = 32
 //  calculated with the following MATLAB code:
 /*
 %function to determine impulse response of filter 
@@ -29,7 +29,7 @@ n = 32; %length of filter, fir1 requires n-1
 %accuracy 
 fs = 100;
 fnyquist = fs/2; %2*fmax, or fs/2 
-fc = 2;  
+fc = 1.5;  
 b = fir1((n-1), fc/fnyquist); %second argument is the normalised cutoff frequency 
 % hamming window and lowpass filter used as defaults in fir1
 
@@ -45,10 +45,12 @@ b_flip = fliplr(b);
 str = sprintf([repmat('%.8g,',[1,16]) '\n'],b_flip); %b is the numerator of the FIR filter (which has no denominator)
 writematrix(str);
 */
-static float32_t firStateF32[BLOCK_SIZE + NUM_TAPS - 1];
+float32_t firStateF32[BLOCK_SIZE + NUM_TAPS - 1];
 const float32_t firCoeffs32[NUM_TAPS_ARRAY_SIZE] = {
-		0.00036790519,0.0017519181,-0.0017866308,-0.0024278967,0.0057034342,0.0013490959,-0.012672325,0.0056445545,0.020155499,-0.023080794,-0.021611854,0.055620945,0.0040563898,-0.11766473,0.085950419,0.49864407,
-0.49864407,0.085950419,-0.11766473,0.0040563898,0.055620945,-0.021611854,-0.023080794,0.020155499,0.0056445545,-0.012672325,0.0013490959,0.0057034342,-0.0024278967,-0.0017866308,0.0017519181,0.00036790519,
+0.0020343958,0.002115475,0.0023153942,0.0026359111,0.0030773238,0.0036384444,0.0043165906,0.0051075975,0.0060058486,0.0070043255,0.008094677,0.0092673059,0.010511473,0.011815415,0.013166481,0.014551278,
+0.015955825,0.017365723,0.018766327,0.020142921,0.021480898,0.022765938,0.023984187,0.025122425,0.02616823,0.027110136,0.027937774,0.028641999,0.029215009,0.029650441,0.029943452,0.030090779,
+0.030090779,0.029943452,0.029650441,0.029215009,0.028641999,0.027937774,0.027110136,0.02616823,0.025122425,0.023984187,0.022765938,0.021480898,0.020142921,0.018766327,0.017365723,0.015955825,
+0.014551278,0.013166481,0.011815415,0.010511473,0.0092673059,0.008094677,0.0070043255,0.0060058486,0.0051075975,0.0043165906,0.0036384444,0.0030773238,0.0026359111,0.0023153942,0.002115475,0.0020343958
 };
 
 
@@ -64,27 +66,83 @@ static float32_t moments[5];  // Array to store spectral moments
  * @param testInput
  * @param testOutput
  */
-void lpf_decimate(float32_t* testInput, float32_t* testOutput)
+void lpf_decimate(arm_fir_decimate_instance_f32* S, float32_t* testInput, float32_t* testOutput)
 {
+    uint32_t blockSize = BLOCK_SIZE;
+    uint32_t numBlocks = FFT_SIZE / blockSize; // Assuming FFT_SIZE is 1024
+    uint32_t i;
 
-	uint32_t blockSize = BLOCK_SIZE;
-	uint32_t numBlocks = FFT_SIZE/BLOCK_SIZE;
-	arm_fir_decimate_instance_f32 S;
-	uint32_t i;
-	float32_t  *inputF32, *outputF32;
-
-	/* Initialize input and output buffer pointers */
-	inputF32 = &testInput[0];
-	outputF32 = &testOutput[0];
-
-    arm_fir_decimate_init_f32(&S, NUM_TAPS, DECIMATION_CONSTANT, (float32_t *)&firCoeffs32[0], &firStateF32[0], blockSize);
-
-    for(i=0; i < numBlocks; i++)
+    for(i = 0; i < numBlocks; i++)
     {
-      arm_fir_decimate_f32(&S, inputF32 + (i * blockSize), outputF32 + (i * blockSize/DECIMATION_CONSTANT), blockSize);
+        arm_fir_decimate_f32(S, 
+                             testInput + (i * blockSize), 
+                             testOutput + (i * (blockSize / DECIMATION_CONSTANT)), 
+                             blockSize);
     }
+    //arm_fir_decimate_f32(S, testInput, testOutput, blockSize);
+}
+
+/**
+ * @brief Calibration function for the ICM20649
+ * @param rawData
+ * @param calOutput
+ */
+void calibrate(float32_t* rawData, float32_t* calOutput)
+{
+    // Define constants for scaling and bias removal
+    const float32_t scale_factor = 9.81f / 8192.0f; // scale factor for 16-bit signed data
+    const float32_t bias_offset = 0.0255f - 9.81f; //bias minus gravity
+
+    // Use CMSIS-DSP function to scale the raw data
+    arm_scale_f32(rawData, scale_factor, calOutput, FFT_SIZE / DECIMATION_CONSTANT);
+
+    // Use CMSIS-DSP function to add the bias offset
+    arm_offset_f32(calOutput, bias_offset, calOutput, FFT_SIZE / DECIMATION_CONSTANT);
 
 }
+
+/**
+ * @brief Detrending function
+ * @param rawData
+ * @param detrendOutput
+ * @param previousSample
+ */
+void detrend(float32_t* calOutput, float32_t* detrendOutput, float32_t* previousSample)
+{
+
+	//Determining Mean of data
+	uint32_t i;
+	float32_t sumTotal, dataMean;
+
+	for (i= 0; i < FFT_SIZE/DECIMATION_CONSTANT; i++)
+	{
+		sumTotal = sumTotal + calOutput[i];
+	}
+
+	dataMean = sumTotal/(FFT_SIZE/DECIMATION_CONSTANT);
+
+	for (i= 0; i < (FFT_SIZE/DECIMATION_CONSTANT); i++)
+	{
+		detrendOutput[i] = calOutput[i] - dataMean;
+	}
+	// RC Highpass function	for detrending (moving average filter)
+	float32_t k = 0.9995;
+	float32_t s[FFT_SIZE];
+	float32_t detrendTemp[FFT_SIZE];
+
+
+	s[0] = 0;
+
+	for (i= 1; i < FFT_SIZE; i++)
+	{
+		 s[i] = detrendTemp[i] + k*(s[i-1]);
+		 detrendTemp[i] = detrendTemp[i] - (1 - k)*(s[i]);
+	}
+
+	detrendOutput = detrendTemp;
+
+}
+
 
 
 
@@ -141,8 +199,18 @@ void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output
     float32_t scaling_factor = 2.0f / (num_steps * NF * SAMPLING_FREQUENCY);
     arm_scale_f32(psd_output, scaling_factor, psd_output, FFT_SIZE / 2);
 
-    // Correct the DC and Nyquist components (do not double them)
-    psd_output[0] /= 2.0f;  // DC component
+    // Remove the DC component
+    psd_output[0] = 0.0f;
+
+    // Remove frequency components below 0.02Hz
+    uint32_t idx = 0;
+    uint32_t freqIndex = (uint32_t)(0.02 / (SAMPLING_FREQUENCY / (float32_t)FFT_SIZE));
+    while (idx < freqIndex) {
+        psd_output[idx] = 0.0f;
+        idx++;
+    }
+
+    // Correct the Nyquist component (do not double it)
     if (FFT_SIZE % 2 == 0) {
         psd_output[(FFT_SIZE / 2) - 1] /= 2.0f;  // Nyquist component for even FFT size
     }
@@ -229,17 +297,17 @@ void calculate_wave_parameters(float32_t *moments, float32_t *wave_params) {
 void integrate_psd_cmsis_static(const float32_t *pSaa, const float32_t *pFreqs, float32_t *pSxx, uint32_t length)
 {
     // Check that length does not exceed MAX_LENGTH
-    if (length > INPUT_SIGNAL_SIZE)
+    if (length > PSD_SIZE)
     {
         // Handle error: length exceeds maximum allowed size
         return;
     }
 
     // Static buffers
-    static float32_t omega[INPUT_SIGNAL_SIZE];
-    static float32_t omega2[INPUT_SIGNAL_SIZE];
-    static float32_t omega4[INPUT_SIGNAL_SIZE];
-    static float32_t recip_omega4[INPUT_SIGNAL_SIZE];
+    static float32_t omega[PSD_SIZE];
+    static float32_t omega2[PSD_SIZE];
+    static float32_t omega4[PSD_SIZE];
+    static float32_t recip_omega4[PSD_SIZE];
 
     // Step 1: omega = 2 * PI * pFreqs
     arm_scale_f32(pFreqs, 2.0f * PI, omega, length);
@@ -275,4 +343,79 @@ void integrate_psd_cmsis_static(const float32_t *pSaa, const float32_t *pFreqs, 
 
     // Step 6: pSxx = pSaa * recip_omega4
     arm_mult_f32(pSaa, recip_omega4, pSxx, length);
+}
+
+/**
+ * @brief Implements fourier filtering in the frequency domain.
+ * 
+ */
+void init_hpf_fourier(void) {
+    // Initialize the FFT instance
+    arm_rfft_fast_init_f32(&S_local, FFT_SIZE);
+
+    // Frequency resolution
+    float32_t freqResolution = SAMPLING_FREQUENCY / FFT_SIZE;
+
+    // Generate the filter function
+    for (uint32_t k = 0; k < NUM_FREQ_BINS; k++) {
+        float32_t freq = k * freqResolution;
+
+        // Initialize the filter coefficient
+        float32_t H = 1.0f;
+
+        if (freq < F_CUTOFF1) {
+            H = 0.0f;
+        } else if (freq >= F_CUTOFF1 && freq <= F_CUTOFF2) {
+            float32_t taper = 0.5f * (1.0f - cosf(PI * (freq - F_CUTOFF1) / TAPER_WIDTH));
+            H = taper;
+        } else {
+            H = 1.0f;
+        }
+
+        /* // Apply double integration scaling
+        if (freq > 0.0f) {
+            float32_t scaling = 1.0f / powf(2.0f * PI * freq, 2);
+            H *= scaling;
+        } else {
+            H = 0.0f;
+        } */ 
+        filter[k] = H;
+    }
+}
+
+/**
+ * @brief Implements fourier filtering in the frequency domain.
+ * 
+ * @param input 
+ * @param output 
+ */
+void fourier_filter(float32_t* input, float32_t* output) {
+    
+    // Perform forward FFT
+    arm_rfft_fast_f32(&S_local, input, fftOutput, 0);
+
+    // Apply the filter in the frequency domain
+    for (uint32_t k = 0; k < NUM_FREQ_BINS; k++) {
+        float32_t H = filter[k];
+
+        if (k == 0) {
+            // DC component
+            fftOutput[0] *= H;
+            fftOutput[1] *= H;
+        } else if (k < FFT_SIZE / 2) {
+            // Positive frequencies
+            uint32_t idx = 2 * k;
+            fftOutput[idx]     *= H;  // Real part
+            fftOutput[idx + 1] *= H;  // Imaginary part
+        } else if (k == FFT_SIZE / 2) {
+            // Nyquist frequency
+            fftOutput[1] *= H;
+        }
+    }
+
+    // Perform inverse FFT
+    arm_rfft_fast_f32(&S_local, fftOutput, output, 1);
+
+    // Scale the output by 1/FFT_SIZE
+    arm_scale_f32(output, 1.0f / FFT_SIZE, output, FFT_SIZE);
 }

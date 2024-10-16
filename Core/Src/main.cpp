@@ -121,12 +121,12 @@ int main(void) {
 
     // Create a task to check SD card functions.
     static StaticTask_t waveProcTaskTCB;
-    static StackType_t waveProcTaskStack[ 16384 ];
+    static StackType_t waveProcTaskStack[ 24000 ];
 
     TaskHandle_t WaveProcTaskHandle = xTaskCreateStatic(
         WaveProcTask,          // Function that implements the task.
         "WaveProcTask",        // Text name for the task.
-        16384,                 // Stack size in words, not bytes.
+        24000,                 // Stack size in words, not bytes.
         NULL,                // Parameter passed into the task.
         configMAX_PRIORITIES - 1U, // Priority at which the task is created.
         waveProcTaskStack,     // Array to use as the task's stack.
@@ -236,55 +236,93 @@ static void WaveProcTask(void *pvParameters) {
 
     printmsg("SD Card Task Started \r\n");
 
+    // Initialize the SD card
     SD_Init();
 
-  //Read Test
+    // Result arrays
+    float32_t psd[512];                // Power spectral density  
+    float32_t moments[5];              // Spectral moments
+    float32_t wave_params[5];          // Wave parameters
 
-  float32_t zAcc[1024];
+    // Variables for processing
+    float32_t zAcc[1024];               // Input signal from SD card
+    float32_t detrendedData[1024];      // Detrended signal 
+    float32_t accumulatedResult[4096];  // Accumulated results for all iterations
+    float32_t decimatedResult[32];      // Decimated result for each iteration 1024 / 32 = 32
+    memset(accumulatedResult, 0, sizeof(accumulatedResult));  // Initialize to zero
 
+    // Index variables
+    int resultIndex = 0;
+    uint32_t fpointer = 0;
+    uint32_t waveLogNo = 0;
+    uint32_t waveDirNo = 68;
+        // Initialize previous sample for stateful filtering
+    float32_t previousSample = 0;
 
-  waveLogNo = 1;
-  waveDirNo = 68;
-  uint32_t fpointer = 0;
+    // Define and initialize the FIR decimator instance
+    static arm_fir_decimate_instance_f32 S;
 
+    // Clear the state buffer before initialization
+    memset(firStateF32, 0, sizeof(firStateF32));
+    arm_fir_decimate_init_f32(&S, NUM_TAPS, DECIMATION_CONSTANT, firCoeffs32, firStateF32, BLOCK_SIZE);
 
-//Wave Read Test
-uint32_t rawDataSize = 102400;
-uint32_t decimation_number = 25;
-uint32_t fileSize = 30000;
-uint32_t fileReadSize = 0;
-float32_t accumulatedResult[4096] = {0}; // Array to accumulate results
-int resultIndex = 0;
-
-for(int i = 0; i < 128; i++) {
-
-    fileReadSize += 1024;
-
-    if (fileReadSize >= 28000) {
-        waveLogNo++;
-        fileReadSize = 0;
+    // Check the sum of the FIR coefficients
+    /*float32_t sum = 0.0f;
+    for(int i = 0; i < NUM_TAPS_ARRAY_SIZE; i++) {
+        sum += firCoeffs32[i];
     }
+    printmsg("Sum of FIR coefficients: %.6f\n", sum);*/
 
-    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-    SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
-    SD_File_Close(&File);
+    // Initialize Fourier filter
+    init_hpf_fourier();
 
-    // LPF Decimate Test
-    float32_t decimatedResult[32]; // 1024 / 25 = 40.96, rounded up to 41
-    lpf_decimate(zAcc, decimatedResult);
+    for(int i = 0; i < 128; i++) {
 
-    // Accumulate the result
-    for (int j = 0; j < 32 && resultIndex < 4096; j++, resultIndex++) {
-        accumulatedResult[resultIndex] = decimatedResult[j];
-    }
+        SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+        SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
+        SD_File_Close(&File);
 
-    //printmsg("Wave Log: %d, Wave Dir: %d, Z-Acc: %.2f, Decimated_Result: %.2f \r\n", waveLogNo, waveDirNo, zAcc[0], decimatedResult[3]);
+        // Apply stateful detrending with continuity between segments
+        detrend(zAcc, detrendedData, &previousSample);
+
+        // fourier filtering
+        fourier_filter(detrendedData, detrendedData);
+
+        // Clip the acceleration signal
+        arm_clip_f32(zAcc, zAcc, 7500.0, 8500.0, FFT_SIZE);
+
+        // Decimate the input signal using the FIR filter 
+        lpf_decimate(&S, zAcc, decimatedResult);
+
+        // Calibrate the decimated result
+        calibrate(decimatedResult, decimatedResult);
+
+        // Accumulate the result, skipping discarded samples
+        for (int j = 0; j < 32 && resultIndex < 4096; j++, resultIndex++) {
+            accumulatedResult[resultIndex] += decimatedResult[j];
+        }
+
 }
 
+pwelch(accumulatedResult, INPUT_SIGNAL_SIZE, psd);
+
+// Integrate the acceleration PSD to obtain the displacement PSD using CMSIS DSP functions with static arrays
+float32_t Freqs[512];
+for (int i = 0; i < 512; i++) {
+    Freqs[i] = i * (SAMPLING_FREQUENCY / FFT_SIZE);
+}
+
+integrate_psd_cmsis_static(psd, Freqs, psd, PSD_SIZE);
+
+compute_spectral_moments(psd, PSD_SIZE, moments);
+
+calculate_wave_parameters(moments, wave_params);
+
 // Print out the accumulated result array
-//for (int i = 0; i < 4096; i++) {
-//    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
-//}
+for (int i = 0; i < INPUT_SIGNAL_SIZE; i++) {
+    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
+    vTaskDelay(2);
+}
 
 vTaskDelete(NULL);
 

@@ -8,6 +8,8 @@ add_library(DSPBasicMath STATIC
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_add_f32.c
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_mult_f32.c
     ${DSP_LIBS_DIR}/BasicMathFunctions/arm_scale_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_offset_f32.c
+    ${DSP_LIBS_DIR}/BasicMathFunctions/arm_clip_f32.c
     ${DSP_LIBS_DIR}/SupportFunctions/arm_q31_to_float.c
     ${DSP_LIBS_DIR}/SupportFunctions/arm_copy_f32.c
     ${DSP_LIBS_DIR}/ComplexMathFunctions/arm_cmplx_mag_f32.c
