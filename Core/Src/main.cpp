@@ -246,7 +246,6 @@ static void WaveProcTask(void *pvParameters) {
 
     // Variables for processing
     float32_t zAcc[1024];               // Input signal from SD card
-    float32_t detrendedData[1024];      // Detrended signal 
     float32_t accumulatedResult[4096];  // Accumulated results for all iterations
     float32_t decimatedResult[32];      // Decimated result for each iteration 1024 / 32 = 32
     memset(accumulatedResult, 0, sizeof(accumulatedResult));  // Initialize to zero
@@ -256,8 +255,6 @@ static void WaveProcTask(void *pvParameters) {
     uint32_t fpointer = 0;
     uint32_t waveLogNo = 0;
     uint32_t waveDirNo = 68;
-        // Initialize previous sample for stateful filtering
-    float32_t previousSample = 0;
 
     // Define and initialize the FIR decimator instance
     static arm_fir_decimate_instance_f32 S;
@@ -282,14 +279,11 @@ static void WaveProcTask(void *pvParameters) {
         SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
         SD_File_Close(&File);
 
-        // Apply stateful detrending with continuity between segments
-        detrend(zAcc, detrendedData, &previousSample);
-
-        // fourier filtering
-        fourier_filter(detrendedData, detrendedData);
-
         // Clip the acceleration signal
-        arm_clip_f32(zAcc, zAcc, 7500.0, 8500.0, FFT_SIZE);
+        // base value 8192 at rest (1g)
+        // 600/8192*9.81 = 0.715 m/s^2 
+        // H = Az_max / (4*pi^2*f^2) = 0.6 / (4*pi^2*0.2^2) = 9.5 m
+        arm_clip_f32(zAcc, zAcc, 7500.0, 8692.0, FFT_SIZE);
 
         // Decimate the input signal using the FIR filter 
         lpf_decimate(&S, zAcc, decimatedResult);
@@ -319,8 +313,8 @@ compute_spectral_moments(psd, PSD_SIZE, moments);
 calculate_wave_parameters(moments, wave_params);
 
 // Print out the accumulated result array
-for (int i = 0; i < INPUT_SIGNAL_SIZE; i++) {
-    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
+for (int i = 0; i < PSD_SIZE; i++) {
+    printmsg("%.2f, \r\n", i, psd[i]);
     vTaskDelay(2);
 }
 

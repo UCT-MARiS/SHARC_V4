@@ -12,12 +12,6 @@
 
 #include "wave_functions.h"
 
-// Define the sampling frequency if not already defined
-#ifndef SAMPLING_FREQUENCY
-#define SAMPLING_FREQUENCY 100.0f  // Example value, replace with actual sampling frequency
-#endif
-
-
 //LPF Filter variables
 //  Assume 100 Hz input signal 3.125 Hz output signal
 //  fc = 1.5 Hz, fs = 100 Hz, M = 32
@@ -94,10 +88,10 @@ void calibrate(float32_t* rawData, float32_t* calOutput)
     const float32_t bias_offset = 0.0255f - 9.81f; //bias minus gravity
 
     // Use CMSIS-DSP function to scale the raw data
-    arm_scale_f32(rawData, scale_factor, calOutput, FFT_SIZE / DECIMATION_CONSTANT);
+    arm_scale_f32(rawData, scale_factor, calOutput, FFT_SIZE / DECIMATION_CONSTANT );
 
     // Use CMSIS-DSP function to add the bias offset
-    arm_offset_f32(calOutput, bias_offset, calOutput, FFT_SIZE / DECIMATION_CONSTANT);
+    arm_offset_f32(calOutput, bias_offset, calOutput, FFT_SIZE / DECIMATION_CONSTANT );
 
 }
 
