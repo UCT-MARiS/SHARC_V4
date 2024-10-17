@@ -283,7 +283,7 @@ static void WaveProcTask(void *pvParameters) {
         // base value 8192 at rest (1g)
         // 600/8192*9.81 = 0.715 m/s^2 
         // H = Az_max / (4*pi^2*f^2) = 0.6 / (4*pi^2*0.2^2) = 9.5 m
-        arm_clip_f32(zAcc, zAcc, 7500.0, 8692.0, FFT_SIZE);
+        arm_clip_f32(zAcc, zAcc, 7692.0, 8692.0, FFT_SIZE);
 
         // Decimate the input signal using the FIR filter 
         lpf_decimate(&S, zAcc, decimatedResult);

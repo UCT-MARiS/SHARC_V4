@@ -18,33 +18,27 @@
 //  calculated with the following MATLAB code:
 /*
 %function to determine impulse response of filter 
-n = 32; %length of filter, fir1 requires n-1 
-%29 chosen as standard trade off between stm32 processing power and
+n = 64; %length of filter, fir1 requires n-1 
+%64 chosen as standard trade off between stm32 processing power and
 %accuracy 
 fs = 100;
 fnyquist = fs/2; %2*fmax, or fs/2 
 fc = 1.5;  
-b = fir1((n-1), fc/fnyquist); %second argument is the normalised cutoff frequency 
+b = fir1((n-1), fc/fnyquist, "low"); %second argument is the normalised cutoff frequency 
 % hamming window and lowpass filter used as defaults in fir1
 
-[h,f]=freqz(b,1,512); %amplitude-frequency filter response
+[h,f]=freqz(b,1,512);%amplitude-frequency filter response
 figure(1)
 plot(f*fs/(2*pi),20*log10(abs(h)))%normalised frequency vs  
 xlabel('frequency/Hz');ylabel('gain/dB');title('The gain response of lowpass filter');
-
-%CMSIS requires filter coefficients to be in reverse time order
-b_flip = fliplr(b);
-
-%Convert to float32_t format
-str = sprintf([repmat('%.8g,',[1,16]) '\n'],b_flip); %b is the numerator of the FIR filter (which has no denominator)
-writematrix(str);
+grid on
 */
 float32_t firStateF32[BLOCK_SIZE + NUM_TAPS - 1];
 const float32_t firCoeffs32[NUM_TAPS_ARRAY_SIZE] = {
-0.0020343958,0.002115475,0.0023153942,0.0026359111,0.0030773238,0.0036384444,0.0043165906,0.0051075975,0.0060058486,0.0070043255,0.008094677,0.0092673059,0.010511473,0.011815415,0.013166481,0.014551278,
-0.015955825,0.017365723,0.018766327,0.020142921,0.021480898,0.022765938,0.023984187,0.025122425,0.02616823,0.027110136,0.027937774,0.028641999,0.029215009,0.029650441,0.029943452,0.030090779,
-0.030090779,0.029943452,0.029650441,0.029215009,0.028641999,0.027937774,0.027110136,0.02616823,0.025122425,0.023984187,0.022765938,0.021480898,0.020142921,0.018766327,0.017365723,0.015955825,
-0.014551278,0.013166481,0.011815415,0.010511473,0.0092673059,0.008094677,0.0070043255,0.0060058486,0.0051075975,0.0043165906,0.0036384444,0.0030773238,0.0026359111,0.0023153942,0.002115475,0.0020343958
+0.00016994838,0.00027708213,0.00041562635,0.00060343095,0.00085871918,0.0011994835,0.0016428637,0.0022045268,0.0028980667,0.003734445,0.0047214889,0.0058634654,0.0071607451,0.0086095686,0.010201925,0.011925552,
+0.01376405,0.015697126,0.017700948,0.019748609,0.02181069,0.023855901,0.025851793,0.027765514,0.029564592,0.031217718,0.032695517,0.033971279,0.035021622,0.035827086,0.036372626,0.036647991,
+0.036647991,0.036372626,0.035827086,0.035021622,0.033971279,0.032695517,0.031217718,0.029564592,0.027765514,0.025851793,0.023855901,0.02181069,0.019748609,0.017700948,0.015697126,0.01376405,
+0.011925552,0.010201925,0.0086095686,0.0071607451,0.0058634654,0.0047214889,0.003734445,0.0028980667,0.0022045268,0.0016428637,0.0011994835,0.00085871918,0.00060343095,0.00041562635,0.00027708213,0.00016994838
 };
 
 
@@ -73,7 +67,6 @@ void lpf_decimate(arm_fir_decimate_instance_f32* S, float32_t* testInput, float3
                              testOutput + (i * (blockSize / DECIMATION_CONSTANT)), 
                              blockSize);
     }
-    //arm_fir_decimate_f32(S, testInput, testOutput, blockSize);
 }
 
 /**
