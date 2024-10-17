@@ -270,9 +270,7 @@ static void WaveProcTask(void *pvParameters) {
     }
     printmsg("Sum of FIR coefficients: %.6f\n", sum);*/
 
-    // Initialize Fourier filter
-    init_hpf_fourier();
-
+// 128 ITERATIONS * (1024 SAMPLES / 32 DECIMATION CONSTANT) = 4096 WAVE SAMPLE SIZE
     for(int i = 0; i < 128; i++) {
 
         SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
@@ -313,8 +311,8 @@ compute_spectral_moments(psd, PSD_SIZE, moments);
 calculate_wave_parameters(moments, wave_params);
 
 // Print out the accumulated result array
-for (int i = 0; i < PSD_SIZE; i++) {
-    printmsg("%.2f, \r\n", i, psd[i]);
+for (int i = 0; i < 4096; i++) {
+    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
     vTaskDelay(2);
 }
 
