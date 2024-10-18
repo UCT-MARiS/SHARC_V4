@@ -212,7 +212,7 @@ sd_status_t SD_Wave_Read(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, ui
  * @param fpointer 
  * @return sd_status_t 
  */
-sd_status_t SD_Wave_Read_Fast(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, uint32_t WaveLogNo,  IMU_Data_SD_t inertialDataType, uint32_t *fpointer);
+sd_status_t SD_Wave_Read_Fast(FIL *myFile, float *IMUArray,  uint32_t WaveDirNo, uint32_t WaveLogNo,  IMU_Data_SD_t inertialDataType, uint32_t *fpointer);
 
 
 /**

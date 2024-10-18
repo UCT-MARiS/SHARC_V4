@@ -51,7 +51,7 @@ RTC_HandleTypeDef hrtc;
 
 //Tasks
 static void LED_task(void *args); 
-static void SDCardTask(void *pvParameters);
+static void WaveProcTask(void *pvParameters);
 static void updateRTC(RTC_HandleTypeDef *hrtc, RTC_TimeTypeDef *sTime, RTC_DateTypeDef *sDate);
 
 //Debugging
@@ -120,20 +120,20 @@ int main(void) {
 
 
     // Create a task to check SD card functions.
-    static StaticTask_t sdCardTaskTCB;
-    static StackType_t sdCardTaskStack[ 8192 ];
+    static StaticTask_t waveProcTaskTCB;
+    static StackType_t waveProcTaskStack[ 24000 ];
 
-    TaskHandle_t sdCardTaskHandle = xTaskCreateStatic(
-        SDCardTask,          // Function that implements the task.
-        "SDCardTask",        // Text name for the task.
-        8192,                 // Stack size in words, not bytes.
+    TaskHandle_t WaveProcTaskHandle = xTaskCreateStatic(
+        WaveProcTask,          // Function that implements the task.
+        "WaveProcTask",        // Text name for the task.
+        24000,                 // Stack size in words, not bytes.
         NULL,                // Parameter passed into the task.
         configMAX_PRIORITIES - 1U, // Priority at which the task is created.
-        sdCardTaskStack,     // Array to use as the task's stack.
-        &sdCardTaskTCB       // Variable to hold the task's data structure.
+        waveProcTaskStack,     // Array to use as the task's stack.
+        &waveProcTaskTCB       // Variable to hold the task's data structure.
     );
 
-    if (sdCardTaskHandle == NULL) {
+    if (WaveProcTaskHandle == NULL) {
         printmsg("Failed to create SDCardTask\r\n");
     }
 //======================== 4. END ============================================================
@@ -232,83 +232,104 @@ static void LED_task(void *pvParameters) {
 }
 
 
-static void SDCardTask(void *pvParameters) {
+static void WaveProcTask(void *pvParameters) {
 
     printmsg("SD Card Task Started \r\n");
 
-    uint8_t waveBufferSegment[] = "1, 2, 3, 8192, 5, 6, 7 \n";
-    uint8_t gpsBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t envBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-    uint8_t pwrBufferSegment[] = "102.27, 245334.12, 14234.15, 22 \r\n";
-
-    waveLogNo = 1;
-    waveDirNo = 1;
-    gpsLogNo = 0;
-    gpsDirNo = 0;
-    envLogNo = 0;
-    envDirNo = 0;
-    pwrLogNo = 0;
-    pwrDirNo = 0;
-
-    //Single Write Test
+    // Initialize the SD card
     SD_Init();
-    //Open wave Log
-    SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-    //Write to wave log
-    SD_File_Write(&File, waveBufferSegment);
-    //Close Wave Log
-    SD_File_Close(&File);
 
-    // Delete the task after completion
-    printmsg("SD Card Task Completed \r\n");
+    // Result arrays
+    float32_t psd[512];                // Power spectral density  
+    float32_t moments[5];              // Spectral moments
+    float32_t wave_params[5];          // Wave parameters
 
-  //Repeated Write Test for directory open functions
+    // Variables for processing
+    float32_t zAcc[1024];               // Input signal from SD card
+    float32_t accumulatedResult[4096];  // Accumulated results for all iterations
+    float32_t decimatedResult[32];      // Decimated result for each iteration 1024 / 32 = 32
+    memset(accumulatedResult, 0, sizeof(accumulatedResult));  // Initialize to zero
 
-  //Open wave Log
-  SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+    // Index variables
+    int resultIndex = 0;
+    uint32_t fpointer = 0;
+    uint32_t waveLogNo = 0;
+    uint32_t waveDirNo = 68;
 
-  for(int i= 0; i<1024; i++)
-  {
-	  //Write to wave log
-	  SD_File_Write(&File, waveBufferSegment);
-  }
+    // Define and initialize the FIR decimator instance
+    static arm_fir_decimate_instance_f32 S;
 
-  //Close Wave Log
-  SD_File_Close(&File);
+    // Clear the state buffer before initialization
+    memset(firStateF32, 0, sizeof(firStateF32));
+    arm_fir_decimate_init_f32(&S, NUM_TAPS, DECIMATION_CONSTANT, firCoeffs32, firStateF32, BLOCK_SIZE);
 
-  printmsg("Write test complete! \r\n");
-  SD_Unmount(SDFatFs);
+    // Check the sum of the FIR coefficients
+    /*float32_t sum = 0.0f;
+    for(int i = 0; i < NUM_TAPS_ARRAY_SIZE; i++) {
+        sum += firCoeffs32[i];
+    }
+    printmsg("Sum of FIR coefficients: %.6f\n", sum);*/
 
+// 128 ITERATIONS * (1024 SAMPLES / 32 DECIMATION CONSTANT) = 4096 WAVE SAMPLE SIZE
+    for(int i = 0; i < 128; i++) {
 
-  //Read Test
+        SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
+        SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
+        SD_File_Close(&File);
 
-  int32_t zAcc[1024];
-  float gpsData[160];
-  float envData[160];
-  float pwrData[160];
+        // Clip the acceleration signal
+        // base value 8192 at rest (1g)
+        // 600/8192*9.81 = 0.715 m/s^2 
+        // H = Az_max / (4*pi^2*f^2) = 0.6 / (4*pi^2*0.2^2) = 9.5 m
+        arm_clip_f32(zAcc, zAcc, 7692.0, 8692.0, FFT_SIZE);
 
+        // Decimate the input signal using the FIR filter 
+        lpf_decimate(&S, zAcc, decimatedResult);
 
-  waveLogNo = 1;
-  waveDirNo = 1;
-  gpsLogNo = 0;
-  gpsDirNo = 0;
-  uint32_t fpointer = 0;
+        // Calibrate the decimated result
+        calibrate(decimatedResult, decimatedResult);
 
+        // Accumulate the result, skipping discarded samples
+        for (int j = 0; j < 32 && resultIndex < 4096; j++, resultIndex++) {
+            accumulatedResult[resultIndex] += decimatedResult[j];
+        }
 
-  //Wave Read Test
-SD_Wave_Open(&File, &Dir, &fno, waveDirNo, waveLogNo);
-SD_Wave_Read_Fast(&File, zAcc, waveDirNo, waveLogNo, Z_ACC, &fpointer);
-SD_File_Close(&File);
+}
 
-  for(int j = 0; j<1024; j++)
-  {
-	 printmsg("Z_acc %d \r\n", zAcc[j]);
-  } 
+    pwelch(accumulatedResult, INPUT_SIGNAL_SIZE, psd);
+
+    // Remove the DC component
+    psd[0] = 0.0f;
+
+    // Remove frequency components below 0.02Hz
+    uint32_t idx = 0;
+    uint32_t freqIndex = (uint32_t)(0.02 / (SAMPLING_FREQUENCY / (float32_t)FFT_SIZE));
+    while (idx < freqIndex) {
+        psd[idx] = 0.0f;
+        idx++;
+    }
+
+    // Integrate the acceleration PSD to obtain the displacement PSD using CMSIS DSP functions with static arrays
+    float32_t Freqs[512];
+    for (int i = 0; i < 512; i++) {
+        Freqs[i] = i * (SAMPLING_FREQUENCY / FFT_SIZE);
+    }
+
+    integrate_psd_cmsis_static(psd, Freqs, psd, PSD_SIZE);
+
+    compute_spectral_moments(psd, PSD_SIZE, moments);
+
+    calculate_wave_parameters(moments, wave_params);
+
+    // Print out the accumulated result array
+    for (int i = 0; i < 4096; i++) {
+        printmsg("%.2f, \r\n", i, accumulatedResult[i]);
+        vTaskDelay(2);
+    }
 
     vTaskDelete(NULL);
 
 }
-
 
 /**
  * @brief Default mode is to put the Cortex-M4 in sleep mode when the RTOS is idle.

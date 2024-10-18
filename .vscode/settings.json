@@ -25,7 +25,8 @@
         "diskio.h": "c",
         "string.h": "c",
         "sd_diskio.h": "c",
-        "ff_gen_drv.h": "c"
+        "ff_gen_drv.h": "c",
+        "math.h": "c"
     },
 
     "editor.fontSize": 16,

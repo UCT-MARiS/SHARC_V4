@@ -22,7 +22,14 @@ TEST_F(ComputeSpectralMomentsTest, CorrectComputation) {
     compute_spectral_moments(psd, PSD_N, moments);
 
     // Expected values (these should be calculated based on the input PSD and the function logic)
-    float32_t expected_moments[5] = {6.0f, 6.4f, 8.32f, 11.6224f, 16.93696f};
+   // Expected values calculated based on the input PSD and sampling frequency
+    float32_t expected_moments[5] = {
+        4.6875f,
+        3.90625f,
+        3.96728515625f,
+        4.329681396484375f,
+        4.929304122924805f
+    };
 
     for (int i = 0; i < 5; ++i) {
         EXPECT_NEAR(moments[i], expected_moments[i], 1e-1);
@@ -39,7 +46,7 @@ TEST_F(ComputeSpectralMomentsTest, sinePSD) {
     // Input signal (example: sine wave)
     float32_t inputSignal[inputSize];
     float32_t fs1 = 0.1f; // Frequency of the sine wave
-    float32_t fsample = 4.0f; // Sampling frequency
+    float32_t fsample = 3.125f; // Sampling frequency
 
     for (uint32_t i = 0; i < inputSize; i++) {
         inputSignal[i] = arm_sin_f32(2 * PI * i * fs1 / fsample);
