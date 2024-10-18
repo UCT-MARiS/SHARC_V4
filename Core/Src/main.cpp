@@ -296,27 +296,38 @@ static void WaveProcTask(void *pvParameters) {
 
 }
 
-pwelch(accumulatedResult, INPUT_SIGNAL_SIZE, psd);
+    pwelch(accumulatedResult, INPUT_SIGNAL_SIZE, psd);
 
-// Integrate the acceleration PSD to obtain the displacement PSD using CMSIS DSP functions with static arrays
-float32_t Freqs[512];
-for (int i = 0; i < 512; i++) {
-    Freqs[i] = i * (SAMPLING_FREQUENCY / FFT_SIZE);
-}
+    // Remove the DC component
+    psd[0] = 0.0f;
 
-integrate_psd_cmsis_static(psd, Freqs, psd, PSD_SIZE);
+    // Remove frequency components below 0.02Hz
+    uint32_t idx = 0;
+    uint32_t freqIndex = (uint32_t)(0.02 / (SAMPLING_FREQUENCY / (float32_t)FFT_SIZE));
+    while (idx < freqIndex) {
+        psd[idx] = 0.0f;
+        idx++;
+    }
 
-compute_spectral_moments(psd, PSD_SIZE, moments);
+    // Integrate the acceleration PSD to obtain the displacement PSD using CMSIS DSP functions with static arrays
+    float32_t Freqs[512];
+    for (int i = 0; i < 512; i++) {
+        Freqs[i] = i * (SAMPLING_FREQUENCY / FFT_SIZE);
+    }
 
-calculate_wave_parameters(moments, wave_params);
+    integrate_psd_cmsis_static(psd, Freqs, psd, PSD_SIZE);
 
-// Print out the accumulated result array
-for (int i = 0; i < 4096; i++) {
-    printmsg("%.2f, \r\n", i, accumulatedResult[i]);
-    vTaskDelay(2);
-}
+    compute_spectral_moments(psd, PSD_SIZE, moments);
 
-vTaskDelete(NULL);
+    calculate_wave_parameters(moments, wave_params);
+
+    // Print out the accumulated result array
+    for (int i = 0; i < 4096; i++) {
+        printmsg("%.2f, \r\n", i, accumulatedResult[i]);
+        vTaskDelay(2);
+    }
+
+    vTaskDelete(NULL);
 
 }
 

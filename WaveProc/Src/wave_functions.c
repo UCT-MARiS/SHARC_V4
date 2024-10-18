@@ -186,16 +186,8 @@ void pwelch(float32_t* input_signal, uint32_t signal_size, float32_t* psd_output
     float32_t scaling_factor = 2.0f / (num_steps * NF * SAMPLING_FREQUENCY);
     arm_scale_f32(psd_output, scaling_factor, psd_output, FFT_SIZE / 2);
 
-    // Remove the DC component
-    psd_output[0] = 0.0f;
-
-    // Remove frequency components below 0.02Hz
-    uint32_t idx = 0;
-    uint32_t freqIndex = (uint32_t)(0.02 / (SAMPLING_FREQUENCY / (float32_t)FFT_SIZE));
-    while (idx < freqIndex) {
-        psd_output[idx] = 0.0f;
-        idx++;
-    }
+    // Correct the DC component (do not double it)
+    psd_output[0] /= 2.0f;
 
     // Correct the Nyquist component (do not double it)
     if (FFT_SIZE % 2 == 0) {
