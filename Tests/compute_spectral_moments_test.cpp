@@ -46,7 +46,7 @@ TEST_F(ComputeSpectralMomentsTest, sinePSD) {
     // Input signal (example: sine wave)
     float32_t inputSignal[inputSize];
     float32_t fs1 = 0.1f; // Frequency of the sine wave
-    float32_t fsample = 4.0f; // Sampling frequency
+    float32_t fsample = 3.125f; // Sampling frequency
 
     for (uint32_t i = 0; i < inputSize; i++) {
         inputSignal[i] = arm_sin_f32(2 * PI * i * fs1 / fsample);
