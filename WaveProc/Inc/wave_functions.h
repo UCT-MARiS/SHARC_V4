@@ -20,12 +20,18 @@ extern "C" {
 #include "arm_math.h"  // CMSIS DSP Library
 
 // Define constants for the pwelch function
-#define FFT_SIZE 1024   // Size of the FFT
-#define WINDOW_SIZE FFT_SIZE  // Window size equals FFT size
+#define SIGNAL_LENGTH 1124
+#define TRUNCATED_LENGTH 1024
+#define FFT_SIZE 256   // Size of the FFT
+#define WINDOW_SIZE FFT_SIZE
 #define OVERLAP 0.5f    // 50% overlap between segments
 
 // Define constants for compute_spectral_moments
-#define SAMPLING_FREQUENCY 4        // Sampling frequency
+#define SAMPLING_FREQUENCY 1        // Sampling frequency
+
+// Define constants for bandpass filter
+#define NUM_TAPS 64
+#define BLOCK_SIZE 32
  
 /**
  * @brief Function to calculate Welch's Power Spectral Density (PSD) estimate.
@@ -54,6 +60,16 @@ void compute_spectral_moments(float32_t *psd, uint32_t N, float32_t *moments);
  * @param wave_params Array to store calculated wave parameters.
  */
 void calculate_wave_parameters(float32_t *moments, float32_t *wave_params);
+
+
+/**
+ * @brief DOuble integration and high pass filter in frequency domain
+ * 
+ * @param rfftInput pointer to intput fft
+ * @param waveAmplitude pointer to output fft 
+ */
+
+void HPFDoubleIntegration(float32_t* rfftInput, float32_t* waveAmplitude);
 
 #ifdef __cplusplus
 }

@@ -76,6 +76,13 @@ typedef enum
 	TEMP,
 }IMU_Data_SD_t;
 
+typedef enum
+{
+	DATE,
+	TIME,
+	Z_VEL,
+}GNSS_Data_SD_t;
+
 
 //========================== 4. Global Variables ==========================================
 
@@ -213,6 +220,19 @@ sd_status_t SD_Wave_Read(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, ui
  * @return sd_status_t 
  */
 sd_status_t SD_Wave_Read_Fast(FIL *myFile, int32_t *IMUArray,  uint32_t WaveDirNo, uint32_t WaveLogNo,  IMU_Data_SD_t inertialDataType, uint32_t *fpointer);
+
+/**
+ * @brief Fast read function for wave data
+ * 
+ * @param myFile 
+ * @param GNSSArray 
+ * @param WaveDirNo 
+ * @param WaveLogNo 
+ * @param GNSSDataType 
+ * @param fpointer 
+ * @return sd_status_t 
+ */
+sd_status_t SD_GNSS_Wave_Read_Fast(FIL *myFile, int32_t *GNSSArray, uint32_t WaveDirNo, uint32_t WaveLogNo, GNSS_Data_SD_t GNSSDataType, uint32_t *fpointer); 
 
 
 /**

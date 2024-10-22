@@ -14,7 +14,7 @@
 
 // Define the sampling frequency if not already defined
 #ifndef SAMPLING_FREQUENCY
-#define SAMPLING_FREQUENCY 256.0f  // Example value, replace with actual sampling frequency
+#define SAMPLING_FREQUENCY 1.0f  // Example value, replace with actual sampling frequency
 #endif
 
 
@@ -152,4 +152,54 @@ void calculate_wave_parameters(float32_t *moments, float32_t *wave_params) {
 
     // Mean zero-crossing period (Tz)
     wave_params[4] = sqrtf(moments[0] / moments[2]);
+}
+
+
+/**
+ * @brief HPFDoubleIntegration
+ * @param fftInput
+ * @param waveAmplitude
+ */
+
+void HPFDoubleIntegration(float32_t* rfftInput, float32_t* waveAmplitude)
+{
+ 	float32_t freq1 = 0.06;
+	float32_t freq2 = 0.04;
+	float32_t fnyq = SAMPLING_FREQUENCY/2.0f;
+	uint32_t i;
+	float32_t Fs = SAMPLING_FREQUENCY;
+	float32_t freq[FFT_SIZE/2];
+    float32_t df = SAMPLING_FREQUENCY * (1.0f / FFT_SIZE);
+
+    for (uint32_t i = 0; i < FFT_SIZE/2; i++) {
+        freq[i] = i * df;
+    }
+
+	//HPF and double integration in frequency domain
+	//Based on Tucker and Pitt
+	for(i=0;i<FFT_SIZE/2; i++)
+	{
+		if(freq[i]<freq1)
+		{
+			waveAmplitude[i] = 0;
+		}
+
+		if(freq[i]>=freq1 && freq[i]<freq2)
+		{
+			waveAmplitude[i] = (1/2)*(1-cos(PI*(freq[i]-freq1)/(freq2-freq1))*(-1/(2*PI*(freq[i])*(rfftInput[i]))));
+		}
+
+		if(freq[i]>=freq2 && freq[i]<fnyq)
+		{
+			waveAmplitude[i] = -1/((2*PI*freq[i])*(2*PI*freq[i]))*rfftInput[i];
+		}
+
+		if(isnan(waveAmplitude[i]))
+		{
+			waveAmplitude[i] = 0;
+		}
+
+        // Take absolute value since it is a power signal
+        arm_abs_f32(waveAmplitude, waveAmplitude, FFT_SIZE/2);
+	}
 }
