@@ -1,0 +1,19 @@
+# Field Tests
+## 13/10/2024
+### GNSS & IMU SHARC Buoy compared to Datawell Waverider MkII
+
+Latitude       : -34 12.24S
+Longitude      : 018 17.20E
+Water Depth    : 70m
+
+GNSS Valid Data: 13:04 - 13:50 & 14:38 - 14:57
+
+IMU Valid Data: 14:38 - 15:03
+
+NB! Both SHARC bouys underestimated the significant wave height compared to the Waverider. Loss in accuracy attributed to:
+	- Moored vs free-drifting
+	- Tether pulling the top of the buoys over when under tension (tether attached above the vertical centre of the buoy)
+	- Instability of the drum in which the SHARC buoys were placed.
+
+Nevertheless, the underestimation is cause for concern.
+	
